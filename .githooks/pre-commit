@@ -1,0 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+
+cd presentation && npm run format
+
+echo "Pre-commit formatting completed."
