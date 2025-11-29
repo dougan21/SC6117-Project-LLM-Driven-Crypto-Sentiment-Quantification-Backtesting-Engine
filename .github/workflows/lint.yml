@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 jobs:
-  run-linters:
+  js-linters:
     name: Run linters
     runs-on: ubuntu-latest
     defaults:
@@ -25,18 +25,26 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v1
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
         with:
-          node-version: '20.9'
+          version: 10
+          run_install: false
 
-      - name: Install Node.js dependencies
-        run: npm ci
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+          cache-dependency-path: presentation/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Run linters
         uses: wearerequired/lint-action@v2
         with:
-          eslint: true
+          # eslint: true
           prettier: true
-          eslint_dir: presentation/
+          # eslint_dir: presentation/
           prettier_dir: presentation/

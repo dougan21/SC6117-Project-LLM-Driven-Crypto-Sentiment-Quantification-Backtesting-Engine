@@ -1,6 +1,20 @@
 #!/bin/bash
 set -euo pipefail
 
-cd presentation && npm run format
+cd presentation && pnpm run format
+
+# Get a list of files that were modified by the formatter
+# This checks the git status in 'presentation' folder
+MODIFIED_FILES=$(git ls-files -m)
+
+# Stage only the modified files
+if [ -n "$MODIFIED_FILES" ]; then
+    git add $MODIFIED_FILES
+    echo "Staged formatted files:"
+    echo "$MODIFIED_FILES"
+else
+    echo "No files were formatted."
+fi
+
 
 echo "Pre-commit formatting completed."
