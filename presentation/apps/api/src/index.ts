@@ -210,6 +210,6 @@ app.get('/healthz', (req, res) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.listen(3001, () => {
-    console.log(`API app listening on port 3001`);
+app.listen(6456, () => {
+    console.log(`API app listening on port 6456`);
 });

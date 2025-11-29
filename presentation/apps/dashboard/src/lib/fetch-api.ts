@@ -8,7 +8,7 @@ export async function fetchApi<T>(path: string): Promise<T> {
     const response = await fetch(
         `${
             isLocalhost
-                ? 'http://localhost:3024'
+                ? 'http://localhost:6456'
                 : 'https://saas-microservices-dashboard.vercel.app'
         }${path}`,
         {
