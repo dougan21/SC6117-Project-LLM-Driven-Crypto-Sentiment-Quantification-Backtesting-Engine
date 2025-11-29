@@ -5,14 +5,11 @@
     "private": true,
     "scripts": {
         "build": "turbo run build",
-        "build:api": "turbo run build -F api",
         "build:dashboard": "turbo run build -F dashboard",
         "dev": "turbo run dev",
-        "dev:api": "turbo run dev -F api",
         "dev:dashboard": "turbo run dev -F dashboard",
         "start:all": "turbo run start",
         "start:dashboard": "turbo run start -F dashboard",
-        "start:api": "turbo run start -F api",
         "typecheck": "turbo run typecheck",
         "lint": "eslint",
         "lint:fix": "eslint --fix",
@@ -43,6 +40,7 @@
         "pnpm": "10.x"
     },
     "dependencies": {
-        "react": "^19.1.1"
+        "react": "^19.1.1",
+        "recharts": "^3.5.1"
     }
 }
