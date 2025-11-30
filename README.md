@@ -14,8 +14,11 @@ root/
 ├── data/   
 │   ├── news_data.csv           # news input
 │   ├── sentiment_results.csv   # sentiment score output
+|   ├── other data file...      # ex. k line
 │   └── sentiment_cache.json    # cache 
 └── lib/
     ├── __init__.py
     └── sentiment_engine.py     # core for llm-sentiment-engine
 ```
+
+Actually, /data only contain the code for retrieving data; it's just used here to demonstrate the file structure.
