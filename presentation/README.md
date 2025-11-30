@@ -25,7 +25,6 @@ A comprehensive dashboard for cryptocurrency analysis powered by LLM technology,
 ```sh
 presentation/
 ├── apps/
-│   ├── api/              # Express.js backend API
 │   └── dashboard/        # Next.js frontend application
 ├── ecosystem.config.js   # PM2 configuration
 ├── turbo.json           # Turbo monorepo configuration
@@ -49,7 +48,6 @@ pnpm install
 pnpm run build
 
 # Or build specific packages
-pnpm run build:api
 pnpm run build:dashboard
 ```
 
@@ -64,7 +62,6 @@ pnpm run dev
 Or start specific services:
 
 ```bash
-pnpm run dev:api      # Start API on port 3001
 pnpm run dev:dashboard # Start Dashboard on port 3000
 ```
 
@@ -73,7 +70,6 @@ pnpm run dev:dashboard # Start Dashboard on port 3000
 Build and start all services:
 
 ```bash
-pnpm run build:api
 pnpm run build:dashboard
 pnpm run start:all
 ```
@@ -100,12 +96,6 @@ pm2 delete all    # Remove all processes
 - `pnpm run lint:fix` - Fix linting issues
 - `pnpm run format` - Format code with Prettier
 
-### API Specific
-
-- `pnpm run dev:api` - Development server
-- `pnpm run build:api` - Build API
-- `pnpm run start:api` - Start production server
-
 ### Dashboard Specific
 
 - `pnpm run dev:dashboard` - Development server
@@ -118,11 +108,6 @@ pm2 delete all    # Remove all processes
 
 - URL: [http://localhost:6234](http://localhost:6234)
 - Features: UI components, layouts, pages, and middleware
-
-### API (Express.js)
-
-- URL: [http://localhost:6456](http://localhost:6456) (or configured port)
-- Endpoints: Cryptocurrency data, predictions, sentiment analysis
 
 ## Development Notes
 
@@ -143,7 +128,3 @@ When contributing, ensure:
 - TypeScript compilation passes
 - Tests pass (if applicable)
 - Code is formatted with Prettier
-
-## License
-
-ISC

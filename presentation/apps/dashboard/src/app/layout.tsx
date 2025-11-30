@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: 'Acme Dashboard',
-    description: 'SaaS daashboard talking to two microservices',
+    title: 'Team 1 Demo Dashboard',
+    description:
+        'A demo dashboard application built with Next.js and Tailwind CSS.',
 };
 
 export default function RootLayout({
