@@ -1,0 +1,22 @@
+{
+  "default_strategy": "standard_crypto",
+  "strategies": {
+    "standard_crypto": [
+      {"score": 1.0, "desc": "Major institutional adoption (e.g., BlackRock), ETF approval, favorable national regulation."},
+      {"score": 0.5, "desc": "Tech upgrades, new partnerships, minor bullish sentiment."},
+      {"score": 0.0, "desc": "Neutral market reports, price updates (e.g. 'Bitcoin hits 30k'), noise."},
+      {"score": -0.5, "desc": "Minor FUD, unfavorable rumors, exchange maintenance."},
+      {"score": -1.0, "desc": "Major hacks (> $100M), exchange insolvency (e.g. FTX), strict government bans."}
+    ],
+    "degen_meme": [
+      {"score": 1.0, "desc": "Elon Musk tweet, Tier-1 exchange listing (Binance/Coinbase), viral trend."},
+      {"score": 0.5, "desc": "Trending on Twitter, influencer shilling."},
+      {"score": 0.0, "desc": "Project updates, roadmap releases (nobody cares in meme world)."},
+      {"score": -1.0, "desc": "Rug pull, dev wallet selling, liquidity removed."}
+    ],
+    "conservative_macro": [
+      {"score": 1.0, "desc": "Fed cuts interest rates, QE (Quantitative Easing) starts."},
+      {"score": -1.0, "desc": "Fed hikes rates, CPI inflation higher than expected, regulatory crackdown."}
+    ]
+  }
+}
