@@ -32,8 +32,8 @@ export function useTicker(options?: UseTickerOptions) {
     // Stable refetch function for manual calls
     const refetch = useCallback(async () => {
         const queryParams = new URLSearchParams();
-        if (symbols.length > 0) {
-            queryParams.append('symbols', symbols.join(','));
+        if (symbolsKey) {
+            queryParams.append('symbols', symbolsKey);
         }
         const url = `${TICKER_API}${queryParams.toString() ? `?${queryParams}` : ''}`;
         try {
@@ -53,7 +53,7 @@ export function useTicker(options?: UseTickerOptions) {
         } finally {
             setLoading(false);
         }
-    }, [symbols]);
+    }, [symbolsKey]);
 
     useEffect(() => {
         if (!autoFetch) return;
@@ -64,8 +64,8 @@ export function useTicker(options?: UseTickerOptions) {
             try {
                 if (mounted && isInitialLoad) setLoading(true);
                 const queryParams = new URLSearchParams();
-                if (symbols.length > 0) {
-                    queryParams.append('symbols', symbols.join(','));
+                if (symbolsKey) {
+                    queryParams.append('symbols', symbolsKey);
                 }
 
                 const url = `${TICKER_API}${queryParams.toString() ? `?${queryParams}` : ''}`;
@@ -108,7 +108,7 @@ export function useTicker(options?: UseTickerOptions) {
             mounted = false;
             clearInterval(interval);
         };
-    }, [symbolsKey, autoFetch, isInitialLoad, symbols]);
+    }, [symbolsKey, autoFetch, isInitialLoad]);
 
     return { data, loading, error, refetch };
 }
