@@ -45,3 +45,6 @@ next-env.d.ts
 
 # local development files
 TODO.md
+
+# npm lock file (using pnpm)
+package-lock.json

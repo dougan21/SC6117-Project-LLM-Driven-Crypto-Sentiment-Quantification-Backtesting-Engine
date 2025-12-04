@@ -25,38 +25,52 @@ export function DashboardHeader() {
     return (
         <header className="flex h-14 items-center justify-between border-b bg-background px-6">
             <div className="relative flex-1 overflow-hidden">
-                <div
-                    aria-live="polite"
-                    className="pointer-events-none select-none"
-                >
-                    <div className="ticker-track flex items-center gap-6 whitespace-nowrap">
-                        {tickerItems.map((it, idx) => {
-                            const up = it.change >= 0;
-                            const color = up
-                                ? 'text-emerald-500'
-                                : 'text-rose-500';
-                            const sign = up ? '+' : '';
-                            return (
-                                <div
-                                    key={`${it.symbol}-${idx}`}
-                                    className="flex items-center gap-2"
-                                >
-                                    <span className="font-medium">
-                                        {it.symbol}/{it.pair}
-                                    </span>
-                                    <span className="tabular-nums">
-                                        {formatPrice(it.price)}
-                                    </span>
-                                    <span className={`tabular-nums ${color}`}>
-                                        {up ? '▲' : '▼'} {sign}
-                                        {Math.abs(it.change).toFixed(2)}%
-                                    </span>
-                                    <span className="opacity-40">•</span>
-                                </div>
-                            );
-                        })}
+                {loading && items.length === 0 && (
+                    <span className="text-sm text-muted-foreground">
+                        Loading prices...
+                    </span>
+                )}
+                {error && items.length === 0 && (
+                    <span className="text-sm text-red-500">
+                        Unable to load live prices
+                    </span>
+                )}
+                {items.length > 0 && (
+                    <div
+                        aria-live="polite"
+                        className="pointer-events-none select-none"
+                    >
+                        <div className="ticker-track flex items-center gap-6 whitespace-nowrap">
+                            {tickerItems.map((it, idx) => {
+                                const up = it.change >= 0;
+                                const color = up
+                                    ? 'text-emerald-500'
+                                    : 'text-rose-500';
+                                const sign = up ? '+' : '';
+                                return (
+                                    <div
+                                        key={`${it.symbol}-${idx}`}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <span className="font-medium">
+                                            {it.symbol}/{it.pair}
+                                        </span>
+                                        <span className="tabular-nums">
+                                            {formatPrice(it.price)}
+                                        </span>
+                                        <span
+                                            className={`tabular-nums ${color}`}
+                                        >
+                                            {up ? '▲' : '▼'} {sign}
+                                            {Math.abs(it.change).toFixed(2)}%
+                                        </span>
+                                        <span className="opacity-40">•</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
+                )}
                 <style jsx>{`
                     .ticker-track {
                         animation: ticker-scroll 25s linear infinite;

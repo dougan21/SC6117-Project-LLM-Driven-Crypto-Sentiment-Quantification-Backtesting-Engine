@@ -12,6 +12,20 @@ export async function POST(request: Request) {
             );
         }
 
+        if (message.length > 1000) {
+            return Response.json(
+                { error: 'Message too long' },
+                { status: 400 }
+            );
+        }
+
+        if (history && (!Array.isArray(history) || history.length > 100)) {
+            return Response.json(
+                { error: 'Invalid history format or too many messages' },
+                { status: 400 }
+            );
+        }
+
         // TODO: Integrate with actual LLM API (OpenAI, Anthropic, etc.)
         // This is a mock response for development
         const mockResponse = generateMockChatResponse(
