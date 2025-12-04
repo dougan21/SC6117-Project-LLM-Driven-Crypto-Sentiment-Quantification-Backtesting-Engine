@@ -78,6 +78,7 @@ export function ChatbotCard() {
                 <button
                     type="submit"
                     disabled={loading || !input.trim()}
+                    aria-label="Send message"
                     className="p-2 rounded-md bg-blue-600 text-white hover:bg-blue-700
                                dark:bg-blue-500 dark:hover:bg-blue-600
                                disabled:opacity-50 disabled:cursor-not-allowed"

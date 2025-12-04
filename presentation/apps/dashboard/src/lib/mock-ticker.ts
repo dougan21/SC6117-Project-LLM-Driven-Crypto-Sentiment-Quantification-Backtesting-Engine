@@ -19,8 +19,8 @@ const BASE_PRICES: Record<string, number> = {
     DOGE: 0.087,
 };
 
-let lastPrices: Record<string, number> = { ...BASE_PRICES };
-let lastChanges: Record<string, number> = {
+// Initial change values (used for reset as well)
+const INITIAL_CHANGES: Record<string, number> = {
     BTC: 0.8,
     ETH: -0.3,
     BNB: 1.2,
@@ -29,6 +29,9 @@ let lastChanges: Record<string, number> = {
     ADA: 0.4,
     DOGE: 3.5,
 };
+
+let lastPrices: Record<string, number> = { ...BASE_PRICES };
+let lastChanges: Record<string, number> = { ...INITIAL_CHANGES };
 
 /**
  * Generates mock ticker data with simulated price movements
@@ -46,7 +49,8 @@ export function generateMockTicker(): TickerItem[] {
 
         // Update price
         const prevPrice = lastPrices[symbol] || BASE_PRICES[symbol];
-        const nextPrice = Math.max(0.00000001, prevPrice * (1 + pct));
+        const minPrice = BASE_PRICES[symbol] * 0.01; // 1% of base price
+        const nextPrice = Math.max(minPrice, prevPrice * (1 + pct));
         lastPrices[symbol] = nextPrice;
 
         // Update change with some randomness
@@ -58,8 +62,11 @@ export function generateMockTicker(): TickerItem[] {
         lastChanges[symbol] = nextChange;
 
         // Generate realistic 24h data
-        const high24h = nextPrice * (1 + Math.random() * 0.05);
-        const low24h = nextPrice * (1 - Math.random() * 0.05);
+        const range = nextPrice * 0.05; // 5% range
+        const priceA = nextPrice + (Math.random() - 0.5) * 2 * range;
+        const priceB = nextPrice + (Math.random() - 0.5) * 2 * range;
+        const high24h = Math.max(nextPrice, priceA, priceB);
+        const low24h = Math.min(nextPrice, priceA, priceB);
         const volume24h = Math.random() * 1000000000 + 500000000; // 500M-1.5B
 
         return {
@@ -80,13 +87,5 @@ export function generateMockTicker(): TickerItem[] {
  */
 export function resetTickerSimulation() {
     lastPrices = { ...BASE_PRICES };
-    lastChanges = {
-        BTC: 0.8,
-        ETH: -0.3,
-        BNB: 1.2,
-        SOL: 2.1,
-        XRP: -0.9,
-        ADA: 0.4,
-        DOGE: 3.5,
-    };
+    lastChanges = { ...INITIAL_CHANGES };
 }
