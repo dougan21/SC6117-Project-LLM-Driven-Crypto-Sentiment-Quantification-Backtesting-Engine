@@ -236,16 +236,7 @@ function generateMockTicker(): TickerItem[] {
 const app = express();
 
 // Middleware
-app.use(
-    cors({
-        origin: [
-            'http://localhost:5628',
-            'http://localhost:6234',
-            'https://sc6117.chencraft.com',
-        ],
-        credentials: true,
-    })
-);
+app.use(cors());
 app.use(express.json());
 
 // Health check
