@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { TickerItem, generateMockTicker } from '@/lib/mock-ticker';
 
 const TICKER_API = '/api/ticker';
@@ -19,40 +19,84 @@ export function useTicker(options?: UseTickerOptions) {
     const [data, setData] = useState<TickerItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
     const symbols = options?.symbols || [];
     const autoFetch = options?.autoFetch !== false; // Default true
 
-    const fetchTicker = async () => {
+    // Create a stable dependency key for symbols
+    const symbolsKey = useMemo(
+        () => symbols.join(','),
+        [symbols.length, ...symbols]
+    );
+
+    // Stable refetch function for manual calls
+    const refetch = useCallback(async () => {
+        const queryParams = new URLSearchParams();
+        if (symbols.length > 0) {
+            queryParams.append('symbols', symbols.join(','));
+        }
+        const url = `${TICKER_API}${queryParams.toString() ? `?${queryParams}` : ''}`;
         try {
             setLoading(true);
-            const queryParams = new URLSearchParams();
-            if (symbols.length > 0) {
-                queryParams.append('symbols', symbols.join(','));
-            }
-
-            const url = `${TICKER_API}${queryParams.toString() ? `?${queryParams}` : ''}`;
             const response = await fetch(url);
-
             if (!response.ok) {
                 throw new Error(
                     `Failed to fetch ticker: ${response.statusText}`
                 );
             }
-
             const tickerData: TickerItem[] = await response.json();
             setData(tickerData);
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err : new Error('Unknown error'));
-            // Fallback to mock data on error
             setData(generateMockTicker());
         } finally {
             setLoading(false);
         }
-    };
+    }, [symbols]);
 
     useEffect(() => {
         if (!autoFetch) return;
+
+        let mounted = true;
+
+        const fetchTicker = async () => {
+            try {
+                if (mounted && isInitialLoad) setLoading(true);
+                const queryParams = new URLSearchParams();
+                if (symbols.length > 0) {
+                    queryParams.append('symbols', symbols.join(','));
+                }
+
+                const url = `${TICKER_API}${queryParams.toString() ? `?${queryParams}` : ''}`;
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(
+                        `Failed to fetch ticker: ${response.statusText}`
+                    );
+                }
+
+                const tickerData: TickerItem[] = await response.json();
+                if (mounted) {
+                    setData(tickerData);
+                    setError(null);
+                }
+            } catch (err) {
+                if (mounted) {
+                    setError(
+                        err instanceof Error ? err : new Error('Unknown error')
+                    );
+                    // Fallback to mock data on error
+                    setData(generateMockTicker());
+                }
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                    setIsInitialLoad(false);
+                }
+            }
+        };
 
         // Fetch immediately
         fetchTicker();
@@ -60,8 +104,11 @@ export function useTicker(options?: UseTickerOptions) {
         // Set up polling interval
         const interval = setInterval(fetchTicker, POLL_INTERVAL);
 
-        return () => clearInterval(interval);
-    }, [symbols.join(','), autoFetch]);
+        return () => {
+            mounted = false;
+            clearInterval(interval);
+        };
+    }, [symbolsKey, autoFetch, isInitialLoad, symbols]);
 
-    return { data, loading, error, refetch: fetchTicker };
+    return { data, loading, error, refetch };
 }

@@ -15,18 +15,24 @@ export interface ChatResponse {
 
 const CHATBOT_API = '/api/chatbot';
 
+const INITIAL_MESSAGE_CONTENT =
+    'Hello! I can help you analyze cryptocurrency trends and answer questions about the market. Ask me anything!';
+
+function createInitialMessage(): ChatMessage {
+    return {
+        role: 'assistant',
+        content: INITIAL_MESSAGE_CONTENT,
+        timestamp: new Date().toISOString(),
+    };
+}
+
 /**
  * Hook for managing chatbot interactions
  * Handles message sending, history, and API communication
  */
 export function useChatbot() {
     const [messages, setMessages] = useState<ChatMessage[]>([
-        {
-            role: 'assistant',
-            content:
-                'Hello! I can help you analyze cryptocurrency trends and answer questions about the market. Ask me anything!',
-            timestamp: new Date().toISOString(),
-        },
+        createInitialMessage(),
     ]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
@@ -90,14 +96,7 @@ export function useChatbot() {
     };
 
     const clearMessages = () => {
-        setMessages([
-            {
-                role: 'assistant',
-                content:
-                    'Hello! I can help you analyze cryptocurrency trends and answer questions about the market. Ask me anything!',
-                timestamp: new Date().toISOString(),
-            },
-        ]);
+        setMessages([createInitialMessage()]);
         setError(null);
     };
 
