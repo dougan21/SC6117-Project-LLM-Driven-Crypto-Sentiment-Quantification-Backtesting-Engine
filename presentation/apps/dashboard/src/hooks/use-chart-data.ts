@@ -1,13 +1,23 @@
 'use client';
 import { useState, useEffect } from 'react';
-import {
-    ChartDataPoint,
-    ChartDataParams,
-    generateMockData,
-} from '@/lib/mock-chart-data';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
-// Mock API endpoint - replace with actual API URL
-const CHART_DATA_API = '/api/chart-data';
+// Types
+interface ChartDataPoint {
+    time: string;
+    realPrice: number;
+    predictionPrice: number;
+    percentDifference: number;
+}
+
+interface ChartDataParams {
+    startDateTime?: string;
+    endDateTime?: string;
+    smoothing?: boolean;
+    showVolatility?: boolean;
+    dataPoints?: number;
+    cryptoPair?: string;
+}
 
 /**
  * Fetches chart data from remote source with optional parameters
@@ -41,7 +51,7 @@ export function useChartData(params?: ChartDataParams) {
                 if (params?.cryptoPair)
                     queryParams.append('cryptoPair', params.cryptoPair);
 
-                const url = `${CHART_DATA_API}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+                const url = `${API_ENDPOINTS.chartData}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
                 const response = await fetch(url);
 
                 if (!response.ok) {
@@ -57,8 +67,8 @@ export function useChartData(params?: ChartDataParams) {
                 setError(
                     err instanceof Error ? err : new Error('Unknown error')
                 );
-                // Fallback to mock data on error
-                setData(generateMockData(params));
+                // Fallback: gracefully handle error without mock data
+                setData([]);
             } finally {
                 setLoading(false);
             }

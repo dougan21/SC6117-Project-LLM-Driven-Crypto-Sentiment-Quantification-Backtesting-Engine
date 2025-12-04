@@ -35,6 +35,7 @@ export default defineConfig([
                 ecmaFeatures: {
                     jsx: true,
                 },
+                tsconfigRootDir: import.meta.dirname,
             },
         },
         ...tseslint.configs.recommended[0],

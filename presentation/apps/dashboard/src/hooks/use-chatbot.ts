@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 export interface ChatMessage {
     role: 'user' | 'assistant';
@@ -12,8 +13,6 @@ export interface ChatResponse {
     message: string;
     timestamp: string;
 }
-
-const CHATBOT_API = '/api/chatbot';
 
 const INITIAL_MESSAGE_CONTENT =
     'Hello! I can help you analyze cryptocurrency trends and answer questions about the market. Ask me anything!';
@@ -52,7 +51,7 @@ export function useChatbot() {
             setLoading(true);
             setError(null);
 
-            const response = await fetch(CHATBOT_API, {
+            const response = await fetch(API_ENDPOINTS.chatbot, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
