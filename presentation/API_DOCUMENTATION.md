@@ -2,22 +2,62 @@
 
 This document describes all API endpoints available in the SC6117 Crypto Dashboard application.
 
+## Base URLs
+
+- **Development:** `http://localhost:6432`
+- **Production:** `https://sc6117-api.chencraft.com`
+
+## CORS Configuration
+
+The API accepts requests from the following origins:
+
+- `http://localhost:5628`
+- `http://localhost:6234`
+- `https://sc6117.chencraft.com`
+
 ## Table of Contents
 
-1. [Chart Data API](#chart-data-api)
-2. [News Feed API](#news-feed-api)
-3. [Ticker API](#ticker-api)
-4. [Chatbot API](#chatbot-api)
+1. [Health Check API](#health-check-api)
+2. [Chart Data API](#chart-data-api)
+3. [News Feed API](#news-feed-api)
+4. [Ticker API](#ticker-api)
+5. [Chatbot API](#chatbot-api)
+
+---
+
+## Health Check API
+
+### GET `/health`
+
+Health check endpoint to verify the API server is running.
+
+#### Request
+
+```bash
+GET /health HTTP/1.1
+Host: localhost:6432
+```
+
+#### Response
+
+**Status:** `200 OK`
+
+```json
+{
+    "status": "ok",
+    "timestamp": "2025-12-04T12:00:00.000Z"
+}
+```
+
+#### Example
+
+```bash
+curl http://localhost:6432/health
+```
 
 ---
 
 ## Chart Data API
-
-### Overview
-
-The Chart Data API provides cryptocurrency price data with real-time prices, predicted prices, and the percentage difference between them. This endpoint is designed to power the BTC/USD dashboard chart visualization.
-
-## Endpoint
 
 ### GET `/api/chart-data`
 
@@ -26,8 +66,8 @@ Returns cryptocurrency price data with real and predicted prices based on query 
 #### Request
 
 ```bash
-GET /api/chart-data?startDateTime=2025-01-01T00:00&endDateTime=2025-01-02T00:00&interval=hourly&smoothing=false HTTP/1.1
-Host: localhost:3000
+GET /api/chart-data?dataPoints=24&cryptoPair=BTC/USD&smoothing=false HTTP/1.1
+Host: localhost:6432
 ```
 
 #### Query Parameters
@@ -75,13 +115,13 @@ An array of chart data points based on selected parameters:
 
 ```bash
 # Get 24 hourly data points for Bitcoin
-curl "http://localhost:3000/api/chart-data?dataPoints=24&cryptoPair=BTC%2FUSD"
+curl "http://localhost:6432/api/chart-data?dataPoints=24&cryptoPair=BTC%2FUSD"
 
 # Get daily data with custom date range
-curl "http://localhost:3000/api/chart-data?startDateTime=2024-12-01T00:00&endDateTime=2024-12-31T23:59&dataPoints=30"
+curl "http://localhost:6432/api/chart-data?startDateTime=2024-12-01T00:00&endDateTime=2024-12-31T23:59&dataPoints=30"
 
 # Get weekly data with smoothing enabled
-curl "http://localhost:3000/api/chart-data?dataPoints=52&smoothing=true&showVolatility=true"
+curl "http://localhost:6432/api/chart-data?dataPoints=52&smoothing=true&showVolatility=true"
 ```
 
 #### Example Response
@@ -109,154 +149,44 @@ curl "http://localhost:3000/api/chart-data?dataPoints=52&smoothing=true&showVola
 ]
 ```
 
-#### Error Response
+#### Implementation Notes
 
-**Status:** `500 Internal Server Error`
+**Current Status:** Mock data generation using `generateMockChartData()` function
 
-```json
-{
-    "error": "Failed to fetch chart data"
-}
-```
+**Data Generation Logic:**
 
-## Implementation Notes
+- Generates data points based on `dataPoints` parameter (default: 24)
+- Time format changes based on range:
+    - ≤24 points: Hourly format (`HH:00`)
+    - ≤30 points: Daily format (`YYYY-MM-DD`)
+    - > 30 points: Weekly format (`Week of YYYY-MM-DD`)
+- Uses mathematical functions (sin/cos) for realistic price simulation
+- Base opening price: $45,000
 
-### Current Implementation
-
-- **Status:** Mock data generation
-- **Location:** `src/app/api/chart-data/route.ts`
-- **Data Generation:** Uses `generateMockData()` from `src/lib/mock-chart-data.ts`
-- **Caching:** Disabled (`Cache-Control: no-store`)
-
-### Integration Points
-
-**Frontend Hook:**
-
-- File: `src/hooks/use-chart-data.ts`
-- Function: `useChartData(params?: ChartDataParams)`
-- Manages: Loading state, error handling, parameter serialization
-
-**Chart Component:**
-
-- File: `src/app/components/rechart-card.tsx`
-- Displays three lines:
-    - Real Price (Emerald #10b981)
-    - Prediction Price (Violet #8b5cf6)
-    - Price Difference % (Amber #f59e0b)
-
-## Future Integration
-
-To replace mock data with actual API:
-
-1. Update the `GET` handler in `src/app/api/chart-data/route.ts` to call your real data source
-2. Modify `generateMockData()` in `src/lib/mock-chart-data.ts` or replace the entire function
-3. Maintain the response schema structure to avoid client-side changes
-
-Example:
-
-```typescript
-// src/app/api/chart-data/route.ts
-export async function GET() {
-    try {
-        const chartData = await fetchFromRealAPI(); // Replace with your API call
-
-        return Response.json(chartData, {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-        });
-    } catch (error) {
-        return Response.json(
-            { error: 'Failed to fetch chart data' },
-            { status: 500 }
-        );
-    }
-}
-```
-
-## Testing
-
-### Using cURL
-
-```bash
-# Basic request
-curl http://localhost:3000/api/chart-data
-
-# With parameters
-curl "http://localhost:3000/api/chart-data?dataPoints=30&cryptoPair=ETH%2FUSD&smoothing=true"
-```
-
-### Using Fetch API
-
-```javascript
-// Basic request
-const response = await fetch('/api/chart-data');
-const data = await response.json();
-console.log(data);
-
-// With parameters
-const params = new URLSearchParams({
-    dataPoints: '30',
-    cryptoPair: 'ETH/USD',
-    startDateTime: '2024-12-01T00:00',
-    endDateTime: '2024-12-31T23:59',
-    smoothing: 'true',
-});
-
-const response = await fetch(`/api/chart-data?${params}`);
-const data = await response.json();
-console.log(data);
-```
-
-### Using React Hook
-
-```typescript
-import { useChartData } from '@/hooks/use-chart-data';
-
-function MyComponent() {
-    const { data, loading, error } = useChartData({
-        dataPoints: 30,
-        cryptoPair: 'BTC/USD',
-        startDateTime: '2024-12-01T00:00',
-        endDateTime: '2024-12-31T23:59',
-        smoothing: true,
-        showVolatility: false,
-    });
-
-    if (loading) return <p>Loading...</p>;
-    if (error) return <p>Error: {error.message}</p>;
-
-    return <div>{/* Use data */}</div>;
-}
-```
+**Integration:** Replace `generateMockChartData()` in `apps/api/src/index.ts` with real data source
 
 ---
 
 ## News Feed API
 
-### Overview
-
-The News Feed API provides cryptocurrency news articles with sentiment analysis. Articles include titles, abstracts, timestamps, and AI-generated sentiment indicators (positive, negative, neutral).
-
-### Endpoint
-
-#### GET `/api/news`
+### GET `/api/news`
 
 Returns a list of cryptocurrency news articles with sentiment analysis.
 
-##### Request
+#### Request
 
 ```bash
 GET /api/news?limit=10 HTTP/1.1
-Host: localhost:3000
+Host: localhost:6432
 ```
 
-##### Query Parameters
+#### Query Parameters
 
-| Parameter | Type     | Required | Default | Description                                 |
-| --------- | -------- | -------- | ------- | ------------------------------------------- |
-| `limit`   | `number` | No       | `10`    | Maximum number of news items (capped at 10) |
+| Parameter | Type     | Required | Default | Description                  |
+| --------- | -------- | -------- | ------- | ---------------------------- |
+| `limit`   | `number` | No       | `10`    | Maximum number of news items |
 
-##### Response Body
+#### Response Body
 
 An array of news items:
 
@@ -279,7 +209,7 @@ An array of news items:
 ]
 ```
 
-##### Response Schema
+#### Response Schema
 
 | Field       | Type                                    | Description                                                    |
 | ----------- | --------------------------------------- | -------------------------------------------------------------- |
@@ -289,74 +219,48 @@ An array of news items:
 | `timestamp` | `string`                                | Publication time in ISO 8601 format                            |
 | `sentiment` | `"positive" \| "negative" \| "neutral"` | AI-analyzed sentiment of the article's impact on crypto market |
 
-##### Example Request
+#### Example Request
 
 ```bash
 # Get latest 10 news items
-curl "http://localhost:3000/api/news?limit=10"
+curl "http://localhost:6432/api/news?limit=10"
 
 # Get latest 5 news items
-curl "http://localhost:3000/api/news?limit=5"
+curl "http://localhost:6432/api/news?limit=5"
 ```
 
-##### Error Response
+#### Implementation Notes
 
-**Status:** `500 Internal Server Error`
+**Current Status:** Mock data generation using `generateMockNews()` function
 
-```json
-{
-    "error": "Failed to fetch news"
-}
-```
+**Data Generation:**
 
-### Implementation Notes
+- Generates 10 mock news items with predefined titles and abstracts
+- Random timestamps within the last 24 hours
+- Predefined sentiment distribution
 
-**Current Implementation:**
-
-- **Status:** Mock data generation
-- **Location:** `src/app/api/news/route.ts`
-- **Data Generation:** Uses `generateMockNews()` from `src/lib/mock-news.ts`
-- **Polling:** Frontend polls every 15 seconds via `use-news.ts` hook
-
-**Frontend Hook:**
-
-- File: `src/hooks/use-news.ts`
-- Function: `useNews(options?: UseNewsOptions)`
-- Features: Auto-refresh every 15 seconds, error handling with fallback to mock data
-
-**Component:**
-
-- File: `src/app/components/news-feed-card.tsx`
-- Displays: Scrollable news feed with sentiment emoji indicators
+**Integration:** Replace `generateMockNews()` in `apps/api/src/index.ts` with real news API
 
 ---
 
 ## Ticker API
 
-### Overview
+### GET `/api/ticker`
 
-The Ticker API provides real-time cryptocurrency price data including current price, 24h change, volume, and high/low values. This endpoint powers the scrolling ticker in the dashboard header.
+Returns real-time cryptocurrency ticker data for all supported symbols.
 
-### Endpoint
-
-#### GET `/api/ticker`
-
-Returns real-time cryptocurrency ticker data.
-
-##### Request
+#### Request
 
 ```bash
-GET /api/ticker?symbols=BTC,ETH,SOL HTTP/1.1
-Host: localhost:3000
+GET /api/ticker HTTP/1.1
+Host: localhost:6432
 ```
 
-##### Query Parameters
+#### Query Parameters
 
-| Parameter | Type     | Required | Default     | Description                                                          |
-| --------- | -------- | -------- | ----------- | -------------------------------------------------------------------- |
-| `symbols` | `string` | No       | All symbols | Comma-separated list of cryptocurrency symbols (e.g., "BTC,ETH,SOL") |
+None. The endpoint returns data for all supported symbols.
 
-##### Response Body
+#### Response Body
 
 An array of ticker items:
 
@@ -383,87 +287,60 @@ An array of ticker items:
 ]
 ```
 
-##### Response Schema
+#### Response Schema
 
 | Field       | Type     | Description                            |
 | ----------- | -------- | -------------------------------------- |
 | `symbol`    | `string` | Cryptocurrency symbol (e.g., BTC, ETH) |
-| `pair`      | `string` | Trading pair (e.g., USD)               |
+| `pair`      | `string` | Trading pair (always "USD")            |
 | `price`     | `number` | Current price in USD                   |
 | `change`    | `number` | 24-hour percentage change              |
 | `volume24h` | `number` | 24-hour trading volume in USD          |
 | `high24h`   | `number` | Highest price in the last 24 hours     |
 | `low24h`    | `number` | Lowest price in the last 24 hours      |
 
-##### Example Request
+#### Example Request
 
 ```bash
-# Get all available tickers
-curl "http://localhost:3000/api/ticker"
-
-# Get specific symbols
-curl "http://localhost:3000/api/ticker?symbols=BTC,ETH,BNB"
+curl "http://localhost:6432/api/ticker"
 ```
 
-##### Error Response
+#### Implementation Notes
 
-**Status:** `500 Internal Server Error`
-
-```json
-{
-    "error": "Failed to fetch ticker data"
-}
-```
-
-### Implementation Notes
-
-**Current Implementation:**
-
-- **Status:** Mock data generation with random walk algorithm
-- **Location:** `src/app/api/ticker/route.ts`
-- **Data Generation:** Uses `generateMockTicker()` from `src/lib/mock-ticker.ts`
-- **Simulation:** Realistic price movements using random walk with drift
-
-**Frontend Hook:**
-
-- File: `src/hooks/use-ticker.ts`
-- Function: `useTicker(options?: UseTickerOptions)`
-- Features: Auto-refresh every 3 seconds for real-time updates
-
-**Component:**
-
-- File: `src/app/components/dashboard-header.tsx`
-- Displays: Animated scrolling ticker with price changes and indicators
+**Current Status:** Mock data generation using `generateMockTicker()` function with stateful random walk algorithm
 
 **Supported Symbols:**
 
-- BTC (Bitcoin)
-- ETH (Ethereum)
-- BNB (Binance Coin)
-- SOL (Solana)
-- XRP (Ripple)
-- ADA (Cardano)
-- DOGE (Dogecoin)
+- BTC (Bitcoin) - Base: $42,000
+- ETH (Ethereum) - Base: $2,200
+- BNB (Binance Coin) - Base: $310
+- SOL (Solana) - Base: $95
+- XRP (Ripple) - Base: $0.62
+- ADA (Cardano) - Base: $0.48
+- DOGE (Dogecoin) - Base: $0.087
+
+**Price Simulation:**
+
+- Uses random walk algorithm with drift
+- Maintains state between calls for realistic continuous price movement
+- Price changes capped between -10% and +10%
+- Volume ranges from 500M to 1.5B USD
+
+**Integration:** Replace `generateMockTicker()` in `apps/api/src/index.ts` with real exchange API (e.g., Binance, Coinbase)
 
 ---
 
 ## Chatbot API
 
-### Overview
-
-The Chatbot API provides AI-powered conversational assistance for cryptocurrency analysis and market insights. This endpoint handles user messages and returns intelligent responses using pattern matching (to be replaced with full LLM integration).
-
-### Endpoint
-
-#### POST `/api/chatbot`
+### POST `/api/chatbot`
 
 Sends a message to the chatbot and receives a response.
 
-##### Request
+#### Request
 
 ```bash
 POST /api/chatbot HTTP/1.1
-Host: localhost:3000
+Host: localhost:6432
 Content-Type: application/json
 
 {
@@ -478,7 +355,7 @@ Content-Type: application/json
 }
 ```
 
-##### Request Body Schema
+#### Request Body Schema
 
 | Field     | Type            | Required | Description                               |
 | --------- | --------------- | -------- | ----------------------------------------- |
@@ -493,26 +370,26 @@ Content-Type: application/json
 | `content`   | `string`                | Message content      |
 | `timestamp` | `string`                | ISO 8601 timestamp   |
 
-##### Response Body
+#### Response Body
 
 ```json
 {
-    "message": "Bitcoin is currently showing strong momentum. Based on recent data, the price has been fluctuating between $40,000 and $45,000. Would you like me to analyze specific trends?",
+    "message": "You said: \"What's the current Bitcoin trend?\". This is a mock response. The chatbot feature is under development.",
     "timestamp": "2025-12-04T10:00:05.000Z"
 }
 ```
 
-##### Response Schema
+#### Response Schema
 
 | Field       | Type     | Description                           |
 | ----------- | -------- | ------------------------------------- |
 | `message`   | `string` | Chatbot's response message            |
 | `timestamp` | `string` | Response timestamp in ISO 8601 format |
 
-##### Example Request
+#### Example Request
 
 ```bash
-curl -X POST "http://localhost:3000/api/chatbot" \
+curl -X POST "http://localhost:6432/api/chatbot" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Tell me about Ethereum",
@@ -520,7 +397,7 @@ curl -X POST "http://localhost:3000/api/chatbot" \
   }'
 ```
 
-##### Error Responses
+#### Error Responses
 
 **Status:** `400 Bad Request`
 
@@ -530,100 +407,27 @@ curl -X POST "http://localhost:3000/api/chatbot" \
 }
 ```
 
-**Status:** `500 Internal Server Error`
+#### Implementation Notes
 
-```json
-{
-    "error": "Failed to process message"
-}
-```
+**Current Status:** Simple mock response that echoes the user's message
 
-### Implementation Notes
+**Response Format:** The chatbot currently returns a simple echo response: `You said: "{message}". This is a mock response. The chatbot feature is under development.`
 
-**Current Implementation:**
-
-- **Status:** Mock responses using pattern matching
-- **Location:** `src/app/api/chatbot/route.ts`
-- **Response Generation:** `generateMockChatResponse()` function
-- **Patterns:** Recognizes queries about Bitcoin, Ethereum, predictions, sentiment, and general help
-
-**Frontend Hook:**
-
-- File: `src/hooks/use-chatbot.ts`
-- Function: `useChatbot()`
-- Features: Message history management, loading states, error handling
-
-**Component:**
-
-- File: `src/app/components/chatbot-card.tsx`
-- Displays: Interactive chat interface with auto-scroll and form submission
-
-**Supported Query Types:**
-
-- Bitcoin/BTC price and trends
-- Ethereum/ETH analysis
-- Price predictions and forecasts
-- Sentiment analysis and news interpretation
-- General help and capabilities
-
-**Future Integration:**
-
-To integrate with a real LLM API (OpenAI, Anthropic, etc.):
-
-1. Replace `generateMockChatResponse()` in `src/app/api/chatbot/route.ts`
-2. Add API key configuration
-3. Implement proper context management with conversation history
-4. Add streaming support for real-time responses
-5. Implement rate limiting and error handling
-
-Example integration:
-
-```typescript
-// src/app/api/chatbot/route.ts
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
-export async function POST(request: Request) {
-    const { message, history } = await request.json();
-
-    const messages = [
-        {
-            role: 'system',
-            content: 'You are a helpful cryptocurrency analysis assistant...',
-        },
-        ...history.map((h) => ({ role: h.role, content: h.content })),
-        { role: 'user', content: message },
-    ];
-
-    const completion = await openai.chat.completions.create({
-        model: 'gpt-4',
-        messages,
-    });
-
-    return Response.json({
-        message: completion.choices[0].message.content,
-        timestamp: new Date().toISOString(),
-    });
-}
-```
+**Integration:** Replace the mock response logic in `apps/api/src/index.ts` with real LLM integration (OpenAI, Anthropic, etc.)
 
 ---
 
 ## Common Response Headers
 
-All API endpoints include the following headers:
+All API endpoints return:
 
 ```
 Content-Type: application/json
-Cache-Control: no-store
 ```
 
 ## Error Handling
 
-All endpoints follow a consistent error response format:
+Error responses follow this format:
 
 ```json
 {
@@ -631,16 +435,59 @@ All endpoints follow a consistent error response format:
 }
 ```
 
-Common HTTP status codes:
+HTTP status codes:
 
 - `200` - Success
 - `400` - Bad Request (invalid parameters)
-- `500` - Internal Server Error
 
-## Rate Limiting
+## Server Configuration
 
-Currently, there is no rate limiting implemented. In production, consider implementing rate limiting to prevent abuse, especially for the Chatbot API which may incur LLM API costs.
+**Port:** 6432
+
+**CORS:** Enabled for the following origins:
+
+- `http://localhost:5628`
+- `http://localhost:6234`
+- `https://sc6117.chencraft.com`
+
+**Middleware:**
+
+- `express.json()` - Parse JSON request bodies
+- `cors()` - Enable CORS with configured origins
+
+## Running the API
+
+**Development:**
+
+```bash
+cd apps/api
+pnpm dev
+```
+
+The server will start on `http://localhost:6432`
+
+**Production:**
+Deploy to your hosting service and ensure it's accessible at `https://sc6117-api.chencraft.com`
 
 ## Testing
 
-All endpoints can be tested using the provided `curl` examples or through the frontend React hooks. The frontend automatically handles polling, error states, and fallback to mock data when needed.
+Test all endpoints using curl:
+
+```bash
+# Health check
+curl http://localhost:6432/health
+
+# Chart data
+curl "http://localhost:6432/api/chart-data?dataPoints=10"
+
+# News
+curl "http://localhost:6432/api/news?limit=5"
+
+# Ticker
+curl http://localhost:6432/api/ticker
+
+# Chatbot
+curl -X POST http://localhost:6432/api/chatbot \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Hello","history":[]}'
+```
