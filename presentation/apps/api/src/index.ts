@@ -300,6 +300,6 @@ app.post('/api/chatbot', (req, res) => {
     res.status(200).json(response);
 });
 
-app.listen(6432, '0.0.0.0', () => {
+app.listen(6432, () => {
     console.log(`API app listening on port 6432`);
 });
