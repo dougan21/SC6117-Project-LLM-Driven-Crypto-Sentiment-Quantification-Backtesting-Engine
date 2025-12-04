@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     ComposedChart,
     Line,
@@ -14,17 +14,24 @@ import {
 import { useChartData } from '@/hooks/use-chart-data';
 import { ChartDataParams } from '@/lib/mock-chart-data';
 
-export function RechartCard() {
+interface RechartCardProps {
+    onCryptoPairChange?: (pair: string) => void;
+}
+
+export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
     const [chartParams, setChartParams] = useState<ChartDataParams>({
         startDateTime: '2025-01-01T00:00',
         endDateTime: new Date().toISOString().slice(0, 16),
-        dataPoints: 24,
         cryptoPair: 'BTC/USD',
-        smoothing: false,
-        showVolatility: false,
     });
 
     const { data: chartData, loading, error } = useChartData(chartParams);
+
+    useEffect(() => {
+        if (onCryptoPairChange && chartParams.cryptoPair) {
+            onCryptoPairChange(chartParams.cryptoPair);
+        }
+    }, [chartParams.cryptoPair, onCryptoPairChange]);
 
     const CustomTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
@@ -40,11 +47,6 @@ export function RechartCard() {
                     <p className="text-sm text-violet-600 dark:text-violet-400">
                         Predicted: $
                         {payload[0].payload.predictionPrice.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-amber-600 dark:text-amber-400">
-                        Difference:{' '}
-                        {payload[0].payload.percentDifference > 0 ? '+' : ''}
-                        {payload[0].payload.percentDifference.toFixed(2)}%
                     </p>
                 </div>
             );
@@ -108,57 +110,6 @@ export function RechartCard() {
                         className="px-3 py-2 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 text-sm"
                     />
                 </div>
-
-                <div className="flex flex-col">
-                    <label className="text-sm font-medium mb-1">
-                        Data Points
-                    </label>
-                    <select
-                        value={chartParams.dataPoints || 24}
-                        onChange={(e) =>
-                            setChartParams({
-                                ...chartParams,
-                                dataPoints: parseInt(e.target.value, 10),
-                            })
-                        }
-                        className="px-3 py-2 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 text-sm"
-                    >
-                        <option value="24">24 (Hourly)</option>
-                        <option value="30">30 (Daily)</option>
-                        <option value="52">52 (Weekly)</option>
-                    </select>
-                </div>
-
-                <div className="flex flex-col justify-end gap-2">
-                    <label className="flex items-center gap-2 text-sm">
-                        <input
-                            type="checkbox"
-                            checked={chartParams.smoothing || false}
-                            onChange={(e) =>
-                                setChartParams({
-                                    ...chartParams,
-                                    smoothing: e.target.checked,
-                                })
-                            }
-                            className="rounded"
-                        />
-                        <span className="font-medium">Smoothing</span>
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                        <input
-                            type="checkbox"
-                            checked={chartParams.showVolatility || false}
-                            onChange={(e) =>
-                                setChartParams({
-                                    ...chartParams,
-                                    showVolatility: e.target.checked,
-                                })
-                            }
-                            className="rounded"
-                        />
-                        <span className="font-medium">Volatility Bands</span>
-                    </label>
-                </div>
             </div>
             <div className="flex-1 w-full flex items-center justify-center">
                 {loading && (
@@ -185,7 +136,7 @@ export function RechartCard() {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="time" />
                             <YAxis
-                                yAxisId="left"
+                                domain={[10000, 'auto']}
                                 label={{
                                     value: 'Price (USD)',
                                     angle: -90,
@@ -195,22 +146,12 @@ export function RechartCard() {
                                     `$${(value / 1000).toFixed(0)}k`
                                 }
                             />
-                            <YAxis
-                                yAxisId="right"
-                                orientation="right"
-                                label={{
-                                    value: 'Difference (%)',
-                                    angle: 90,
-                                    position: 'insideRight',
-                                }}
-                            />
                             <Tooltip
                                 content={<CustomTooltip />}
                                 cursor={{ strokeDasharray: '3 3' }}
                             />
                             <Legend />
                             <Line
-                                yAxisId="left"
                                 type="monotone"
                                 dataKey="realPrice"
                                 stroke="#10b981"
@@ -219,21 +160,11 @@ export function RechartCard() {
                                 isAnimationActive={false}
                             />
                             <Line
-                                yAxisId="left"
                                 type="monotone"
                                 dataKey="predictionPrice"
                                 stroke="#8b5cf6"
                                 dot={false}
                                 name="Prediction Price"
-                                isAnimationActive={false}
-                            />
-                            <Line
-                                yAxisId="right"
-                                type="monotone"
-                                dataKey="percentDifference"
-                                stroke="#f59e0b"
-                                dot={false}
-                                name="Price Difference %"
                                 isAnimationActive={false}
                             />
                         </ComposedChart>

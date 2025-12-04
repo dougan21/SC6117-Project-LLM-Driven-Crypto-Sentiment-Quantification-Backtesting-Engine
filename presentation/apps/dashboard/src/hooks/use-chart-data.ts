@@ -7,15 +7,11 @@ interface ChartDataPoint {
     time: string;
     realPrice: number;
     predictionPrice: number;
-    percentDifference: number;
 }
 
 interface ChartDataParams {
     startDateTime?: string;
     endDateTime?: string;
-    smoothing?: boolean;
-    showVolatility?: boolean;
-    dataPoints?: number;
     cryptoPair?: string;
 }
 
@@ -39,15 +35,6 @@ export function useChartData(params?: ChartDataParams) {
                     queryParams.append('startDateTime', params.startDateTime);
                 if (params?.endDateTime)
                     queryParams.append('endDateTime', params.endDateTime);
-                if (params?.smoothing)
-                    queryParams.append('smoothing', String(params.smoothing));
-                if (params?.showVolatility)
-                    queryParams.append(
-                        'showVolatility',
-                        String(params.showVolatility)
-                    );
-                if (params?.dataPoints)
-                    queryParams.append('dataPoints', String(params.dataPoints));
                 if (params?.cryptoPair)
                     queryParams.append('cryptoPair', params.cryptoPair);
 
@@ -75,14 +62,7 @@ export function useChartData(params?: ChartDataParams) {
         };
 
         fetchData();
-    }, [
-        params?.startDateTime,
-        params?.endDateTime,
-        params?.smoothing,
-        params?.showVolatility,
-        params?.dataPoints,
-        params?.cryptoPair,
-    ]);
+    }, [params?.startDateTime, params?.endDateTime, params?.cryptoPair]);
 
     return { data, loading, error };
 }

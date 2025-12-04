@@ -6,15 +6,11 @@ interface ChartDataPoint {
     time: string;
     realPrice: number;
     predictionPrice: number;
-    percentDifference: number;
 }
 
 interface ChartDataParams {
     startDateTime?: string;
     endDateTime?: string;
-    smoothing?: boolean;
-    showVolatility?: boolean;
-    dataPoints?: number;
     cryptoPair?: string;
 }
 
@@ -51,20 +47,43 @@ interface ChatRequest {
 function generateMockChartData(params?: ChartDataParams): ChartDataPoint[] {
     const openingPrice = 45000;
     const data: ChartDataPoint[] = [];
-    const dataPoints = params?.dataPoints || 24;
+
+    // Parse start and end times
+    let startTime: Date;
+    let endTime: Date;
+
+    if (params?.startDateTime && params?.endDateTime) {
+        startTime = new Date(params.startDateTime);
+        endTime = new Date(params.endDateTime);
+    } else {
+        // Default: last 24 hours
+        endTime = new Date();
+        startTime = new Date(endTime.getTime() - 24 * 60 * 60 * 1000);
+    }
+
+    // Calculate time range and number of data points
+    const timeRangeMs = endTime.getTime() - startTime.getTime();
+    const dataPoints = 24; // Fixed to 24 data points
+    const intervalMs = timeRangeMs / (dataPoints - 1);
 
     for (let i = 0; i < dataPoints; i++) {
-        let timeLabel = '';
-        if (dataPoints <= 24) {
-            timeLabel = `${i.toString().padStart(2, '0')}:00`;
-        } else if (dataPoints <= 30) {
-            const date = new Date();
-            date.setDate(date.getDate() - (dataPoints - i));
-            timeLabel = date.toISOString().split('T')[0];
+        const currentTime = new Date(startTime.getTime() + i * intervalMs);
+
+        // Format time based on time range
+        let timeLabel: string;
+        if (timeRangeMs <= 24 * 60 * 60 * 1000) {
+            // Less than or equal to 24 hours: show time
+            timeLabel = currentTime.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+            });
+        } else if (timeRangeMs <= 30 * 24 * 60 * 60 * 1000) {
+            // Less than or equal to 30 days: show date
+            timeLabel = currentTime.toISOString().split('T')[0];
         } else {
-            const date = new Date();
-            date.setDate(date.getDate() - (dataPoints - i) * 7);
-            timeLabel = `Week of ${date.toISOString().split('T')[0]}`;
+            // More than 30 days: show date
+            timeLabel = currentTime.toISOString().split('T')[0];
         }
 
         const priceChange = Math.sin(i / 4) * 2000 + Math.random() * 1000 - 500;
@@ -74,14 +93,10 @@ function generateMockChartData(params?: ChartDataParams): ChartDataPoint[] {
             Math.cos(i / 5) * 1500 + Math.random() * 500 - 250;
         const predictionPrice = openingPrice + priceChange + predictionOffset;
 
-        const percentDifference =
-            ((predictionPrice - realPrice) / realPrice) * 100;
-
         data.push({
             time: timeLabel,
             realPrice: Math.round(realPrice),
             predictionPrice: Math.round(predictionPrice),
-            percentDifference: Math.round(percentDifference * 100) / 100,
         });
     }
 
@@ -145,6 +160,12 @@ function generateMockNews(): NewsItem[] {
             sentiment: sentiments[i],
         });
     }
+
+    // Sort by timestamp descending (newest first)
+    news.sort(
+        (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
 
     return news;
 }
@@ -237,11 +258,6 @@ app.get('/api/chart-data', (req, res) => {
     const params: ChartDataParams = {
         startDateTime: req.query.startDateTime as string,
         endDateTime: req.query.endDateTime as string,
-        smoothing: req.query.smoothing === 'true',
-        showVolatility: req.query.showVolatility === 'true',
-        dataPoints: req.query.dataPoints
-            ? parseInt(req.query.dataPoints as string, 10)
-            : undefined,
         cryptoPair: req.query.cryptoPair as string,
     };
 

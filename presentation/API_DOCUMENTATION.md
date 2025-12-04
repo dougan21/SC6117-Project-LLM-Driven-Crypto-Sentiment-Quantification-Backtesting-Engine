@@ -66,62 +66,53 @@ Returns cryptocurrency price data with real and predicted prices based on query 
 #### Request
 
 ```bash
-GET /api/chart-data?dataPoints=24&cryptoPair=BTC/USD&smoothing=false HTTP/1.1
+GET /api/chart-data?startDateTime=2025-12-03T00:00&endDateTime=2025-12-04T00:00&cryptoPair=BTC/USD HTTP/1.1
 Host: localhost:6432
 ```
 
 #### Query Parameters
 
-| Parameter        | Type      | Required | Default   | Description                                                      |
-| ---------------- | --------- | -------- | --------- | ---------------------------------------------------------------- |
-| `startDateTime`  | `string`  | No       | -         | Start date and time in ISO 8601 format (YYYY-MM-DDTHH:mm)        |
-| `endDateTime`    | `string`  | No       | -         | End date and time in ISO 8601 format (YYYY-MM-DDTHH:mm)          |
-| `dataPoints`     | `number`  | No       | `24`      | Number of data points to return (24 hourly, 30 daily, 52 weekly) |
-| `cryptoPair`     | `string`  | No       | `BTC/USD` | Cryptocurrency pair (BTC/USD, ETH/USD, XRP/USD)                  |
-| `smoothing`      | `boolean` | No       | `false`   | Apply data smoothing filter                                      |
-| `showVolatility` | `boolean` | No       | `false`   | Include volatility band calculations                             |
+| Parameter       | Type     | Required | Description                                               |
+| --------------- | -------- | -------- | --------------------------------------------------------- |
+| `startDateTime` | `string` | Yes      | Start date and time in ISO 8601 format (YYYY-MM-DDTHH:mm) |
+| `endDateTime`   | `string` | Yes      | End date and time in ISO 8601 format (YYYY-MM-DDTHH:mm)   |
+| `cryptoPair`    | `string` | Yes      | Cryptocurrency pair (BTC/USD, ETH/USD, XRP/USD)           |
 
 #### Response Body
 
-An array of chart data points based on selected parameters:
+An array of 24 chart data points:
 
 ```json
 [
     {
         "time": "00:00",
         "realPrice": 45234,
-        "predictionPrice": 45612,
-        "percentDifference": 0.84
+        "predictionPrice": 45612
     },
     {
-        "time": "01:00",
+        "time": "01:02",
         "realPrice": 45891,
-        "predictionPrice": 45234,
-        "percentDifference": -1.43
+        "predictionPrice": 45234
     }
 ]
 ```
 
 #### Response Schema
 
-| Field               | Type     | Description                                                                                                                 |
-| ------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `time`              | `string` | Hour in `HH:00` format (24-hour)                                                                                            |
-| `realPrice`         | `number` | Actual cryptocurrency price in USD (integer)                                                                                |
-| `predictionPrice`   | `number` | Predicted price by the ML model in USD (integer)                                                                            |
-| `percentDifference` | `number` | Percentage difference between prediction and real price, calculated as: `((predictionPrice - realPrice) / realPrice) * 100` |
+| Field             | Type     | Description                                                                               |
+| ----------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `time`            | `string` | Time/date label - format adapts based on time range (HH:MM for ≤24h, YYYY-MM-DD for >24h) |
+| `realPrice`       | `number` | Actual cryptocurrency price in USD (integer)                                              |
+| `predictionPrice` | `number` | Predicted price by the ML model in USD (integer)                                          |
 
 #### Example Request
 
 ```bash
-# Get 24 hourly data points for Bitcoin
-curl "http://localhost:6432/api/chart-data?dataPoints=24&cryptoPair=BTC%2FUSD"
+# Get data for Bitcoin (default: last 24 hours)
+curl "http://localhost:6432/api/chart-data?cryptoPair=BTC/USD"
 
-# Get daily data with custom date range
-curl "http://localhost:6432/api/chart-data?startDateTime=2024-12-01T00:00&endDateTime=2024-12-31T23:59&dataPoints=30"
-
-# Get weekly data with smoothing enabled
-curl "http://localhost:6432/api/chart-data?dataPoints=52&smoothing=true&showVolatility=true"
+# Get data with custom date range for Ethereum
+curl "http://localhost:6432/api/chart-data?startDateTime=2025-11-01T00:00&endDateTime=2025-12-01T00:00&cryptoPair=ETH/USD"
 ```
 
 #### Example Response
@@ -131,20 +122,17 @@ curl "http://localhost:6432/api/chart-data?dataPoints=52&smoothing=true&showVola
     {
         "time": "00:00",
         "realPrice": 45000,
-        "predictionPrice": 45523,
-        "percentDifference": 1.17
+        "predictionPrice": 45523
     },
     {
-        "time": "01:00",
+        "time": "01:02",
         "realPrice": 46245,
-        "predictionPrice": 45812,
-        "percentDifference": -0.94
+        "predictionPrice": 45812
     },
     {
-        "time": "02:00",
+        "time": "02:05",
         "realPrice": 45678,
-        "predictionPrice": 46234,
-        "percentDifference": 1.22
+        "predictionPrice": 46234
     }
 ]
 ```
@@ -155,13 +143,14 @@ curl "http://localhost:6432/api/chart-data?dataPoints=52&smoothing=true&showVola
 
 **Data Generation Logic:**
 
-- Generates data points based on `dataPoints` parameter (default: 24)
-- Time format changes based on range:
-    - ≤24 points: Hourly format (`HH:00`)
-    - ≤30 points: Daily format (`YYYY-MM-DD`)
-    - > 30 points: Weekly format (`Week of YYYY-MM-DD`)
+- Always returns exactly 24 data points
+- Data points are evenly distributed across the selected time range
+- **Time formatting:**
+    - Time ranges ≤24 hours: HH:MM format (24-hour, e.g., "10:00", "14:30")
+    - Time ranges >24 hours: YYYY-MM-DD format (e.g., "2025-11-27", "2025-12-03")
 - Uses mathematical functions (sin/cos) for realistic price simulation
 - Base opening price: $45,000
+- Default range (if not specified): Last 24 hours
 
 **Integration:** Replace `generateMockChartData()` in `apps/api/src/index.ts` with real data source
 
@@ -182,9 +171,9 @@ Host: localhost:6432
 
 #### Query Parameters
 
-| Parameter | Type     | Required | Default | Description                  |
-| --------- | -------- | -------- | ------- | ---------------------------- |
-| `limit`   | `number` | No       | `10`    | Maximum number of news items |
+| Parameter | Type     | Required | Description                  |
+| --------- | -------- | -------- | ---------------------------- |
+| `limit`   | `number` | Yes      | Maximum number of news items |
 
 #### Response Body
 
@@ -238,6 +227,7 @@ curl "http://localhost:6432/api/news?limit=5"
 - Generates 10 mock news items with predefined titles and abstracts
 - Random timestamps within the last 24 hours
 - Predefined sentiment distribution
+- **Sorting:** News items are sorted chronologically with newest items first (descending timestamp order)
 
 **Integration:** Replace `generateMockNews()` in `apps/api/src/index.ts` with real news API
 
@@ -477,8 +467,11 @@ Test all endpoints using curl:
 # Health check
 curl http://localhost:6432/health
 
-# Chart data
-curl "http://localhost:6432/api/chart-data?dataPoints=10"
+# Chart data (default: last 24 hours)
+curl "http://localhost:6432/api/chart-data?cryptoPair=BTC/USD"
+
+# Chart data with time range
+curl "http://localhost:6432/api/chart-data?startDateTime=2025-12-03T00:00&endDateTime=2025-12-04T00:00&cryptoPair=BTC/USD"
 
 # News
 curl "http://localhost:6432/api/news?limit=5"
