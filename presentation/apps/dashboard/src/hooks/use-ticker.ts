@@ -24,10 +24,7 @@ export function useTicker(options?: UseTickerOptions) {
     const autoFetch = options?.autoFetch !== false; // Default true
 
     // Create a stable dependency key for symbols
-    const symbolsKey = useMemo(
-        () => symbols.join(','),
-        [symbols.length, ...symbols]
-    );
+    const symbolsKey = useMemo(() => symbols.join(','), [symbols]);
 
     // Stable refetch function for manual calls
     const refetch = useCallback(async () => {
