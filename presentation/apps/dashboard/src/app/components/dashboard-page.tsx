@@ -33,6 +33,13 @@ export default function Dashboard() {
                     </div>
                 </div>
             </main>
+            {/* Cloudflare Web Analytics */}
+            <script
+                defer
+                src="https://static.cloudflareinsights.com/beacon.min.js"
+                data-cf-beacon='{"token": "00a78a5b918a4c24b5d2c48e6a5a12a1"}'
+            ></script>
+            {/* End Cloudflare Web Analytics */}
         </DashboardLayout>
     );
 }

@@ -44,7 +44,7 @@ jobs:
       - name: Run linters
         uses: wearerequired/lint-action@v2
         with:
-          # eslint: true
+          eslint: true
           prettier: true
-          # eslint_dir: presentation/
+          eslint_dir: presentation/
           prettier_dir: presentation/

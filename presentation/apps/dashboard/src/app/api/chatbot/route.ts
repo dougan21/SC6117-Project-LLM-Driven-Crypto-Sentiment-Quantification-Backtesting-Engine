@@ -60,7 +60,7 @@ export async function POST(request: Request) {
  */
 function generateMockChatResponse(
     message: string,
-    history: ChatMessage[]
+    _history: ChatMessage[]
 ): string {
     const lowerMessage = message.toLowerCase();
 

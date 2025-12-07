@@ -86,7 +86,7 @@ pnpm run dev
 Or start specific services:
 
 ```bash
-pnpm run dev:dashboard # Start Dashboard on port 3000
+pnpm run dev:dashboard # Start Dashboard on port 5628
 ```
 
 ### Production
