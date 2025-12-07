@@ -253,8 +253,10 @@ const INITIAL_CHANGES: Record<string, number> = {
     DOGE: 3.5,
 };
 
-const lastPrices: Record<string, number> = { ...BASE_PRICES };
-const lastChanges: Record<string, number> = { ...INITIAL_CHANGES };
+// eslint-disable-next-line prefer-const
+let lastPrices: Record<string, number> = { ...BASE_PRICES };
+// eslint-disable-next-line prefer-const
+let lastChanges: Record<string, number> = { ...INITIAL_CHANGES };
 
 function generateMockTicker(): TickerItem[] {
     const symbols = ['BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE'];

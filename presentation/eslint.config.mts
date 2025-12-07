@@ -34,6 +34,7 @@ export default tseslint.config(
             react: pluginReact,
         },
         rules: {
+            ...pluginReact.configs.flat.recommended.rules,
             'react/jsx-key': 'off',
             'react/display-name': 'off',
             'react/prop-types': 'off',
