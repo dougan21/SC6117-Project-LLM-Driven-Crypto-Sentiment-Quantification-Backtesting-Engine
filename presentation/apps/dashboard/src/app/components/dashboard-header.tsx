@@ -71,7 +71,7 @@ export function DashboardHeader() {
                         </div>
                     </div>
                 )}
-                <style jsx>{`
+                <style>{`
                     .ticker-track {
                         animation: ticker-scroll 25s linear infinite;
                         will-change: transform;
