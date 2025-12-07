@@ -1,15 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { NewsItem, generateMockNews } from '@/lib/mock-news';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
-const NEWS_API = '/api/news';
-const POLL_INTERVAL = 15000; // 15 seconds
+// Types
+interface NewsItem {
+    id: string;
+    title: string;
+    abstract: string;
+    timestamp: string;
+    sentiment: 'positive' | 'negative' | 'neutral';
+}
 
-export interface UseNewsOptions {
+interface UseNewsOptions {
     limit?: number;
     autoFetch?: boolean;
 }
+
+const POLL_INTERVAL = 15000; // 15 seconds
 
 /**
  * Hook for fetching and polling news from remote source
@@ -30,7 +38,7 @@ export function useNews(options?: UseNewsOptions) {
             const queryParams = new URLSearchParams();
             queryParams.append('limit', String(limit));
 
-            const url = `${NEWS_API}?${queryParams}`;
+            const url = `${API_ENDPOINTS.news}?${queryParams}`;
             const response = await fetch(url);
 
             if (!response.ok) {
@@ -42,8 +50,8 @@ export function useNews(options?: UseNewsOptions) {
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err : new Error('Unknown error'));
-            // Fallback to mock data on error
-            setNews(generateMockNews().slice(0, limit));
+            // Fallback: gracefully handle error without mock data
+            setNews([]);
         } finally {
             setLoading(false);
         }

@@ -7,5 +7,12 @@ module.exports = {
             cwd: './',
             interpreter: 'bash',
         },
+        {
+            name: 'api',
+            script: 'pnpm',
+            args: '--filter api start',
+            cwd: './',
+            interpreter: 'bash',
+        },
     ],
 };

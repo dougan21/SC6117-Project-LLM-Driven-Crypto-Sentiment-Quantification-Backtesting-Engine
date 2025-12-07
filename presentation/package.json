@@ -6,10 +6,13 @@
     "scripts": {
         "build": "turbo run build",
         "build:dashboard": "turbo run build -F dashboard",
+        "build:api": "turbo run build -F api",
         "dev": "turbo run dev",
         "dev:dashboard": "turbo run dev -F dashboard",
+        "dev:api": "turbo run dev -F api",
         "start:all": "turbo run start",
         "start:dashboard": "turbo run start -F dashboard",
+        "start:api": "turbo run start -F api",
         "typecheck": "turbo run typecheck",
         "lint": "eslint",
         "lint:fix": "eslint --fix",
