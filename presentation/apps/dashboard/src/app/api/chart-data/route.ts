@@ -6,20 +6,12 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const startDateTime = searchParams.get('startDateTime') || undefined;
         const endDateTime = searchParams.get('endDateTime') || undefined;
-        const smoothing = searchParams.get('smoothing') === 'true';
-        const showVolatility = searchParams.get('showVolatility') === 'true';
-        const dataPoints = searchParams.get('dataPoints')
-            ? parseInt(searchParams.get('dataPoints')!, 10)
-            : 24;
         const cryptoPair = searchParams.get('cryptoPair') || 'BTC/USD';
 
         // Generate data with parameters
         const chartData = generateMockData({
             startDateTime,
             endDateTime,
-            smoothing,
-            showVolatility,
-            dataPoints,
             cryptoPair,
         });
 

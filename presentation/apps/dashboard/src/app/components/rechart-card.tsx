@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     ComposedChart,
     Line,
@@ -14,38 +14,55 @@ import {
 import { useChartData } from '@/hooks/use-chart-data';
 import { ChartDataParams } from '@/lib/mock-chart-data';
 
-export function RechartCard() {
+interface RechartCardProps {
+    onCryptoPairChange?: (pair: string) => void;
+}
+
+export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
     const [chartParams, setChartParams] = useState<ChartDataParams>({
         startDateTime: '2025-01-01T00:00',
         endDateTime: new Date().toISOString().slice(0, 16),
-        dataPoints: 24,
         cryptoPair: 'BTC/USD',
-        smoothing: false,
-        showVolatility: false,
     });
 
     const { data: chartData, loading, error } = useChartData(chartParams);
 
+    useEffect(() => {
+        if (onCryptoPairChange && chartParams.cryptoPair) {
+            onCryptoPairChange(chartParams.cryptoPair);
+        }
+    }, [chartParams.cryptoPair, onCryptoPairChange]);
+
     const CustomTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
+            const data = payload[0].payload;
+            const events = data.events;
+
             return (
                 <div className="bg-white dark:bg-slate-900 p-3 rounded border border-gray-300 dark:border-slate-600 shadow-md">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {payload[0].payload.time}
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                        {data.time}
                     </p>
                     <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                        Real Price: $
-                        {payload[0].payload.realPrice.toLocaleString()}
+                        Hold Value: ${data.holdValue.toLocaleString()}
                     </p>
                     <p className="text-sm text-violet-600 dark:text-violet-400">
-                        Predicted: $
-                        {payload[0].payload.predictionPrice.toLocaleString()}
+                        Strategy Value: ${data.strategyValue.toLocaleString()}
                     </p>
-                    <p className="text-sm text-amber-600 dark:text-amber-400">
-                        Difference:{' '}
-                        {payload[0].payload.percentDifference > 0 ? '+' : ''}
-                        {payload[0].payload.percentDifference.toFixed(2)}%
-                    </p>
+                    {events && events.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700">
+                            {events.map((event: any, idx: number) => (
+                                <div key={idx} className="text-xs">
+                                    <p className="font-semibold text-blue-600 dark:text-blue-400">
+                                        {event.action}
+                                    </p>
+                                    <p className="text-gray-600 dark:text-gray-400">
+                                        {event.trigger}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -71,7 +88,6 @@ export function RechartCard() {
                     >
                         <option value="BTC/USD">Bitcoin (BTC/USD)</option>
                         <option value="ETH/USD">Ethereum (ETH/USD)</option>
-                        <option value="XRP/USD">Ripple (XRP/USD)</option>
                     </select>
                 </div>
 
@@ -108,57 +124,6 @@ export function RechartCard() {
                         className="px-3 py-2 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 text-sm"
                     />
                 </div>
-
-                <div className="flex flex-col">
-                    <label className="text-sm font-medium mb-1">
-                        Data Points
-                    </label>
-                    <select
-                        value={chartParams.dataPoints || 24}
-                        onChange={(e) =>
-                            setChartParams({
-                                ...chartParams,
-                                dataPoints: parseInt(e.target.value, 10),
-                            })
-                        }
-                        className="px-3 py-2 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 text-sm"
-                    >
-                        <option value="24">24 (Hourly)</option>
-                        <option value="30">30 (Daily)</option>
-                        <option value="52">52 (Weekly)</option>
-                    </select>
-                </div>
-
-                <div className="flex flex-col justify-end gap-2">
-                    <label className="flex items-center gap-2 text-sm">
-                        <input
-                            type="checkbox"
-                            checked={chartParams.smoothing || false}
-                            onChange={(e) =>
-                                setChartParams({
-                                    ...chartParams,
-                                    smoothing: e.target.checked,
-                                })
-                            }
-                            className="rounded"
-                        />
-                        <span className="font-medium">Smoothing</span>
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                        <input
-                            type="checkbox"
-                            checked={chartParams.showVolatility || false}
-                            onChange={(e) =>
-                                setChartParams({
-                                    ...chartParams,
-                                    showVolatility: e.target.checked,
-                                })
-                            }
-                            className="rounded"
-                        />
-                        <span className="font-medium">Volatility Bands</span>
-                    </label>
-                </div>
             </div>
             <div className="flex-1 w-full flex items-center justify-center">
                 {loading && (
@@ -185,7 +150,7 @@ export function RechartCard() {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="time" />
                             <YAxis
-                                yAxisId="left"
+                                domain={[10000, 'auto']}
                                 label={{
                                     value: 'Price (USD)',
                                     angle: -90,
@@ -195,45 +160,25 @@ export function RechartCard() {
                                     `$${(value / 1000).toFixed(0)}k`
                                 }
                             />
-                            <YAxis
-                                yAxisId="right"
-                                orientation="right"
-                                label={{
-                                    value: 'Difference (%)',
-                                    angle: 90,
-                                    position: 'insideRight',
-                                }}
-                            />
                             <Tooltip
                                 content={<CustomTooltip />}
                                 cursor={{ strokeDasharray: '3 3' }}
                             />
                             <Legend />
                             <Line
-                                yAxisId="left"
                                 type="monotone"
-                                dataKey="realPrice"
+                                dataKey="holdValue"
                                 stroke="#10b981"
                                 dot={false}
-                                name="Real Price"
+                                name="Buy & Hold"
                                 isAnimationActive={false}
                             />
                             <Line
-                                yAxisId="left"
                                 type="monotone"
-                                dataKey="predictionPrice"
+                                dataKey="strategyValue"
                                 stroke="#8b5cf6"
                                 dot={false}
-                                name="Prediction Price"
-                                isAnimationActive={false}
-                            />
-                            <Line
-                                yAxisId="right"
-                                type="monotone"
-                                dataKey="percentDifference"
-                                stroke="#f59e0b"
-                                dot={false}
-                                name="Price Difference %"
+                                name="Active Strategy"
                                 isAnimationActive={false}
                             />
                         </ComposedChart>

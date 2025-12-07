@@ -1,13 +1,26 @@
 'use client';
 import { useState, useEffect } from 'react';
-import {
-    ChartDataPoint,
-    ChartDataParams,
-    generateMockData,
-} from '@/lib/mock-chart-data';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
-// Mock API endpoint - replace with actual API URL
-const CHART_DATA_API = '/api/chart-data';
+// Types
+interface TradingEvent {
+    timestamp: string;
+    action: string;
+    trigger: string;
+}
+
+interface ChartDataPoint {
+    time: string;
+    holdValue: number; // Value if bought at start and held
+    strategyValue: number; // Value from active trading strategy
+    events?: TradingEvent[]; // Optional trading events at this time point
+}
+
+interface ChartDataParams {
+    startDateTime?: string;
+    endDateTime?: string;
+    cryptoPair?: string;
+}
 
 /**
  * Fetches chart data from remote source with optional parameters
@@ -29,19 +42,10 @@ export function useChartData(params?: ChartDataParams) {
                     queryParams.append('startDateTime', params.startDateTime);
                 if (params?.endDateTime)
                     queryParams.append('endDateTime', params.endDateTime);
-                if (params?.smoothing)
-                    queryParams.append('smoothing', String(params.smoothing));
-                if (params?.showVolatility)
-                    queryParams.append(
-                        'showVolatility',
-                        String(params.showVolatility)
-                    );
-                if (params?.dataPoints)
-                    queryParams.append('dataPoints', String(params.dataPoints));
                 if (params?.cryptoPair)
                     queryParams.append('cryptoPair', params.cryptoPair);
 
-                const url = `${CHART_DATA_API}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+                const url = `${API_ENDPOINTS.chartData}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
                 const response = await fetch(url);
 
                 if (!response.ok) {
@@ -57,22 +61,15 @@ export function useChartData(params?: ChartDataParams) {
                 setError(
                     err instanceof Error ? err : new Error('Unknown error')
                 );
-                // Fallback to mock data on error
-                setData(generateMockData(params));
+                // Fallback: gracefully handle error without mock data
+                setData([]);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchData();
-    }, [
-        params?.startDateTime,
-        params?.endDateTime,
-        params?.smoothing,
-        params?.showVolatility,
-        params?.dataPoints,
-        params?.cryptoPair,
-    ]);
+    }, [params?.startDateTime, params?.endDateTime, params?.cryptoPair]);
 
     return { data, loading, error };
 }

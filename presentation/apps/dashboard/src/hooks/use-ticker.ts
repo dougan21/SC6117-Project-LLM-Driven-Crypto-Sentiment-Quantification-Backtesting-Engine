@@ -1,15 +1,25 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { TickerItem, generateMockTicker } from '@/lib/mock-ticker';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
-const TICKER_API = '/api/ticker';
-const POLL_INTERVAL = 3000; // 3 seconds for real-time updates
+// Types
+interface TickerItem {
+    symbol: string;
+    pair: string;
+    price: number;
+    change: number;
+    volume24h: number;
+    high24h: number;
+    low24h: number;
+}
 
-export interface UseTickerOptions {
+interface UseTickerOptions {
     symbols?: string[];
     autoFetch?: boolean;
 }
+
+const POLL_INTERVAL = 3000; // 3 seconds for real-time updates
 
 /**
  * Hook for fetching and polling cryptocurrency ticker data
@@ -32,7 +42,7 @@ export function useTicker(options?: UseTickerOptions) {
         if (symbolsKey) {
             queryParams.append('symbols', symbolsKey);
         }
-        const url = `${TICKER_API}${queryParams.toString() ? `?${queryParams}` : ''}`;
+        const url = `${API_ENDPOINTS.ticker}${queryParams.toString() ? `?${queryParams}` : ''}`;
         try {
             setLoading(true);
             const response = await fetch(url);
@@ -46,7 +56,7 @@ export function useTicker(options?: UseTickerOptions) {
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err : new Error('Unknown error'));
-            setData(generateMockTicker());
+            setData([]);
         } finally {
             setLoading(false);
         }
@@ -65,7 +75,7 @@ export function useTicker(options?: UseTickerOptions) {
                     queryParams.append('symbols', symbolsKey);
                 }
 
-                const url = `${TICKER_API}${queryParams.toString() ? `?${queryParams}` : ''}`;
+                const url = `${API_ENDPOINTS.ticker}${queryParams.toString() ? `?${queryParams}` : ''}`;
                 const response = await fetch(url);
 
                 if (!response.ok) {
@@ -84,8 +94,8 @@ export function useTicker(options?: UseTickerOptions) {
                     setError(
                         err instanceof Error ? err : new Error('Unknown error')
                     );
-                    // Fallback to mock data on error
-                    setData(generateMockTicker());
+                    // Fallback: gracefully handle error without mock data
+                    setData([]);
                 }
             } finally {
                 if (mounted) {

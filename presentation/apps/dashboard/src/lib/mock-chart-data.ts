@@ -1,16 +1,19 @@
+export interface TradingEvent {
+    timestamp: string;
+    action: string;
+    trigger: string;
+}
+
 export interface ChartDataPoint {
     time: string;
-    realPrice: number;
-    predictionPrice: number;
-    percentDifference: number;
+    holdValue: number; // Value if bought at start and held
+    strategyValue: number; // Value from active trading strategy
+    events?: TradingEvent[]; // Optional trading events at this time point
 }
 
 export interface ChartDataParams {
     startDateTime?: string; // ISO 8601 format: YYYY-MM-DDTHH:mm
     endDateTime?: string; // ISO 8601 format: YYYY-MM-DDTHH:mm
-    smoothing?: boolean; // Apply data smoothing
-    showVolatility?: boolean; // Show volatility bands
-    dataPoints?: number; // Number of data points to return (default: 24)
     cryptoPair?: string; // Cryptocurrency pair (default: BTC/USD)
 }
 
@@ -23,25 +26,42 @@ export function generateMockData(params?: ChartDataParams): ChartDataPoint[] {
     const openingPrice = 45000;
     const data: ChartDataPoint[] = [];
 
-    // Determine number of data points
-    const dataPoints = params?.dataPoints || 24;
+    // Parse start and end times
+    let startTime: Date;
+    let endTime: Date;
+
+    if (params?.startDateTime && params?.endDateTime) {
+        startTime = new Date(params.startDateTime);
+        endTime = new Date(params.endDateTime);
+    } else {
+        // Default: last 24 hours
+        endTime = new Date();
+        startTime = new Date(endTime.getTime() - 24 * 60 * 60 * 1000);
+    }
+
+    // Calculate time range and number of data points
+    const timeRangeMs = endTime.getTime() - startTime.getTime();
+    const dataPoints = 24; // Fixed to 24 data points
+    const intervalMs = timeRangeMs / (dataPoints - 1);
 
     for (let i = 0; i < dataPoints; i++) {
-        // Format time based on data points
-        let timeLabel = '';
-        if (dataPoints <= 24) {
-            // Hourly format
-            timeLabel = `${i.toString().padStart(2, '0')}:00`;
-        } else if (dataPoints <= 30) {
-            // Daily format
-            const date = new Date();
-            date.setDate(date.getDate() - (dataPoints - i));
-            timeLabel = date.toISOString().split('T')[0];
+        const currentTime = new Date(startTime.getTime() + i * intervalMs);
+
+        // Format time based on time range
+        let timeLabel: string;
+        if (timeRangeMs <= 24 * 60 * 60 * 1000) {
+            // Less than or equal to 24 hours: show time
+            timeLabel = currentTime.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+            });
+        } else if (timeRangeMs <= 30 * 24 * 60 * 60 * 1000) {
+            // Less than or equal to 30 days: show date
+            timeLabel = currentTime.toISOString().split('T')[0];
         } else {
-            // Weekly format
-            const date = new Date();
-            date.setDate(date.getDate() - (dataPoints - i) * 7);
-            timeLabel = `Week of ${date.toISOString().split('T')[0]}`;
+            // More than 30 days: show date
+            timeLabel = currentTime.toISOString().split('T')[0];
         }
 
         // Simulate real price movement with some randomness
@@ -53,15 +73,10 @@ export function generateMockData(params?: ChartDataParams): ChartDataPoint[] {
             Math.cos(i / 5) * 1500 + Math.random() * 500 - 250;
         const predictionPrice = openingPrice + priceChange + predictionOffset;
 
-        // Calculate percentage difference between prediction and real price
-        const percentDifference =
-            ((predictionPrice - realPrice) / realPrice) * 100;
-
         data.push({
             time: timeLabel,
-            realPrice: Math.round(realPrice),
-            predictionPrice: Math.round(predictionPrice),
-            percentDifference: Math.round(percentDifference * 100) / 100,
+            holdValue: Math.round(realPrice),
+            strategyValue: Math.round(predictionPrice),
         });
     }
 
