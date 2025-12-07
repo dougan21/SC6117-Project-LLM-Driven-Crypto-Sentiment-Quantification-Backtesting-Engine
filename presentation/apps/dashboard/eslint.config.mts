@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';

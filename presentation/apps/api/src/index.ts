@@ -253,8 +253,8 @@ const INITIAL_CHANGES: Record<string, number> = {
     DOGE: 3.5,
 };
 
-let lastPrices: Record<string, number> = { ...BASE_PRICES };
-let lastChanges: Record<string, number> = { ...INITIAL_CHANGES };
+const lastPrices: Record<string, number> = { ...BASE_PRICES };
+const lastChanges: Record<string, number> = { ...INITIAL_CHANGES };
 
 function generateMockTicker(): TickerItem[] {
     const symbols = ['BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE'];

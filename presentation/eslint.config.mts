@@ -2,21 +2,24 @@ import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import pluginReact from 'eslint-plugin-react';
-import json from '@eslint/json';
-import markdown from '@eslint/markdown';
-import css from '@eslint/css';
-import { defineConfig } from 'eslint/config';
 
-export default defineConfig([
+export default tseslint.config(
     {
         ignores: [
-            '.next/**',
-            'dist/**',
-            'node_modules/**',
+            '**/node_modules/**',
+            '**/.next/**',
+            '**/dist/**',
+            '**/build/**',
+            '**/.turbo/**',
             '**/*.mjs',
             '**/*.cjs',
+            '**/*.json',
+            '**/*.md',
+            '**/*.css',
         ],
     },
+    js.configs.recommended,
+    ...tseslint.configs.recommended,
     {
         files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
         languageOptions: {
@@ -26,65 +29,39 @@ export default defineConfig([
         },
     },
     {
-        files: ['**/*.ts', '**/*.tsx'],
-        languageOptions: {
-            parser: tseslint.parser,
-            parserOptions: {
-                ecmaVersion: 'latest',
-                sourceType: 'module',
-                ecmaFeatures: {
-                    jsx: true,
-                },
-                tsconfigRootDir: import.meta.dirname,
-            },
-        },
-        ...tseslint.configs.recommended[0],
-    },
-    {
         files: ['**/*.{jsx,tsx}'],
-        ...pluginReact.configs.flat.recommended,
-        languageOptions: {
-            parser: tseslint.parser,
-            parserOptions: {
-                ecmaVersion: 'latest',
-                sourceType: 'module',
-                ecmaFeatures: {
-                    jsx: true,
-                },
-            },
-            globals: globals.browser,
+        plugins: {
+            react: pluginReact,
         },
         rules: {
             'react/jsx-key': 'off',
             'react/display-name': 'off',
             'react/prop-types': 'off',
             'react/no-unescaped-entities': 'off',
-            ...pluginReact.configs.flat.recommended.rules,
+            'react/react-in-jsx-scope': 'off',
+        },
+        settings: {
+            react: {
+                version: 'detect',
+            },
         },
     },
     {
-        files: ['**/*.json'],
-        language: 'json/json',
-        extends: ['json/recommended'],
+        rules: {
+            '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-unused-vars': [
+                'warn',
+                {
+                    argsIgnorePattern: '^_',
+                    varsIgnorePattern: '^_',
+                },
+            ],
+        },
     },
     {
-        files: ['**/*.jsonc'],
-        language: 'json/jsonc',
-        extends: ['json/recommended'],
-    },
-    {
-        files: ['**/*.json5'],
-        language: 'json/json5',
-        extends: ['json/recommended'],
-    },
-    {
-        files: ['**/*.md'],
-        language: 'markdown/gfm',
-        extends: ['markdown/recommended'],
-    },
-    {
-        files: ['**/*.css'],
-        language: 'css/css',
-        extends: ['css/recommended'],
-    },
-]);
+        files: ['**/tailwind.config.ts'],
+        rules: {
+            '@typescript-eslint/no-require-imports': 'off',
+        },
+    }
+);
