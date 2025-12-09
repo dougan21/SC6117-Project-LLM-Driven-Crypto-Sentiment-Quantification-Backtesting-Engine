@@ -46,7 +46,7 @@ export function DashboardHeader() {
                                             {it.symbol}/{it.pair}
                                         </span>
                                         <span className="tabular-nums text-base">
-                                            {it.price}
+                                            {'$' + it.price}
                                         </span>
                                         <span
                                             className={`tabular-nums text-base ${color}`}
