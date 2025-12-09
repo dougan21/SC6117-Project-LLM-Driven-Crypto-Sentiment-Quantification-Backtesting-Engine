@@ -16,7 +16,7 @@
         "typecheck": "turbo run typecheck",
         "lint": "eslint",
         "lint:fix": "eslint --fix",
-        "format": "prettier . --write --log-level silent"
+        "format": "prettier . --write --log-level silent && eslint --fix ."
     },
     "devDependencies": {
         "@eslint/css": "^0.14.1",

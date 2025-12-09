@@ -6,6 +6,9 @@ module.exports = {
             args: '--filter dashboard start',
             cwd: './',
             interpreter: 'bash',
+            env: {
+                NODE_ENV: 'production',
+            },
         },
         {
             name: 'api',
@@ -13,6 +16,12 @@ module.exports = {
             args: '--filter api start',
             cwd: './',
             interpreter: 'bash',
+            env: {
+                NODE_ENV: 'production',
+                // COINGECKO_API_KEY will be read from apps/api/.env file
+                // or you can set it here directly for production:
+                // COINGECKO_API_KEY: 'your_production_key_here',
+            },
         },
     ],
 };

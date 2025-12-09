@@ -4,7 +4,16 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { config } from './config.js';
+import { config } from 'dotenv';
+import { config as apiConfig } from './config.js';
+import { fetchTickerData } from './lib/ticker-service.js';
+
+// Load environment variables from .env file in API directory
+config();
+
+// Get current file path for other uses
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Utility function to relay requests to remote server
 async function relayRequest(
@@ -66,16 +75,6 @@ interface NewsItem {
     abstract: string;
     timestamp: string;
     sentiment: 'positive' | 'negative' | 'neutral';
-}
-
-interface TickerItem {
-    symbol: string;
-    pair: string;
-    price: number;
-    change: number;
-    volume24h: number;
-    high24h: number;
-    low24h: number;
 }
 
 interface ChatMessage {
@@ -232,71 +231,6 @@ function generateMockNews(): NewsItem[] {
     return news;
 }
 
-// Ticker state for consistent simulation
-const BASE_PRICES: Record<string, number> = {
-    BTC: 42000,
-    ETH: 2200,
-    BNB: 310,
-    SOL: 95,
-    XRP: 0.62,
-    ADA: 0.48,
-    DOGE: 0.087,
-};
-
-const INITIAL_CHANGES: Record<string, number> = {
-    BTC: 0.8,
-    ETH: -0.3,
-    BNB: 1.2,
-    SOL: 2.1,
-    XRP: -0.9,
-    ADA: 0.4,
-    DOGE: 3.5,
-};
-
-// eslint-disable-next-line prefer-const
-let lastPrices: Record<string, number> = { ...BASE_PRICES };
-// eslint-disable-next-line prefer-const
-let lastChanges: Record<string, number> = { ...INITIAL_CHANGES };
-
-function generateMockTicker(): TickerItem[] {
-    const symbols = ['BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE'];
-
-    return symbols.map((symbol) => {
-        const baseDrift = (Math.random() - 0.5) * 0.006;
-        const prevChange = lastChanges[symbol] || 0;
-        const pct = (prevChange / 100) * 0.2 + baseDrift;
-
-        const prevPrice = lastPrices[symbol] || BASE_PRICES[symbol];
-        const minPrice = BASE_PRICES[symbol] * 0.01;
-        const nextPrice = Math.max(minPrice, prevPrice * (1 + pct));
-        lastPrices[symbol] = nextPrice;
-
-        const changeAdjustment = (Math.random() - 0.5) * 0.6;
-        const nextChange = Math.max(
-            -10,
-            Math.min(10, prevChange + changeAdjustment)
-        );
-        lastChanges[symbol] = nextChange;
-
-        const range = nextPrice * 0.05;
-        const priceA = nextPrice + (Math.random() - 0.5) * 2 * range;
-        const priceB = nextPrice + (Math.random() - 0.5) * 2 * range;
-        const high24h = Math.max(nextPrice, priceA, priceB);
-        const low24h = Math.min(nextPrice, priceA, priceB);
-        const volume24h = Math.random() * 1000000000 + 500000000;
-
-        return {
-            symbol,
-            pair: 'USD',
-            price: nextPrice,
-            change: nextChange,
-            volume24h,
-            high24h,
-            low24h,
-        };
-    });
-}
-
 const app = express();
 
 // Middleware
@@ -315,8 +249,6 @@ app.use(
 app.use(express.json());
 
 // Load OpenAPI specification
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const swaggerDocument = YAML.load(path.join(__dirname, 'openapi.yaml'));
 
 // Swagger UI endpoint
@@ -337,13 +269,16 @@ app.get('/health', (req, res) => {
 // Chart data endpoint
 app.get('/api/chart-data', async (req, res) => {
     try {
-        if (config.useActualServer) {
+        if (apiConfig.useActualServer) {
             // Relay request to remote server
             const queryString = new URLSearchParams(
                 req.query as any
             ).toString();
             const path = `/api/chart-data${queryString ? '?' + queryString : ''}`;
-            const data = await relayRequest(config.remoteServers.server1, path);
+            const data = await relayRequest(
+                apiConfig.remoteServers.server1,
+                path
+            );
             res.status(200).json(data);
         } else {
             // Use mock data
@@ -364,13 +299,16 @@ app.get('/api/chart-data', async (req, res) => {
 // News endpoint
 app.get('/api/news', async (req, res) => {
     try {
-        if (config.useActualServer) {
+        if (apiConfig.useActualServer) {
             // Relay request to remote server
             const queryString = new URLSearchParams(
                 req.query as any
             ).toString();
             const path = `/api/news${queryString ? '?' + queryString : ''}`;
-            const data = await relayRequest(config.remoteServers.server1, path);
+            const data = await relayRequest(
+                apiConfig.remoteServers.server1,
+                path
+            );
             res.status(200).json(data);
         } else {
             // Use mock data
@@ -388,19 +326,11 @@ app.get('/api/news', async (req, res) => {
 
 // Ticker endpoint
 app.get('/api/ticker', async (req, res) => {
+    // Always try to fetch from CoinGecko first
     try {
-        if (config.useActualServer) {
-            // Relay request to remote server
-            const data = await relayRequest(
-                config.remoteServers.server1,
-                '/api/ticker'
-            );
-            res.status(200).json(data);
-        } else {
-            // Use mock data
-            const data = generateMockTicker();
-            res.status(200).json(data);
-        }
+        const data = await fetchTickerData();
+        res.status(200).json(data);
+        return;
     } catch (error) {
         console.error('Ticker error:', error);
         res.status(500).json({ error: 'Failed to fetch ticker data' });
@@ -417,10 +347,10 @@ app.post('/api/chatbot', async (req, res) => {
             return;
         }
 
-        if (config.useActualServer) {
+        if (apiConfig.useActualServer) {
             // Relay request to remote server
             const data = await relayRequest(
-                config.remoteServers.server1,
+                apiConfig.remoteServers.server1,
                 '/api/chatbot',
                 'POST',
                 req.body
