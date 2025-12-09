@@ -5,17 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useTicker } from '@/hooks/use-ticker';
 
-function formatPrice(n: number) {
-    if (n >= 1000)
-        return `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-    if (n >= 1)
-        return `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-    return `$${n.toLocaleString(undefined, { maximumFractionDigits: 6 })}`;
-}
-
 export function DashboardHeader() {
-    const user = 'admin';
-
     // Fetch real-time ticker data from API
     const { data: items, loading, error } = useTicker();
 
@@ -56,7 +46,7 @@ export function DashboardHeader() {
                                             {it.symbol}/{it.pair}
                                         </span>
                                         <span className="tabular-nums">
-                                            {formatPrice(it.price)}
+                                            {it.price}
                                         </span>
                                         <span
                                             className={`tabular-nums ${color}`}
@@ -86,12 +76,25 @@ export function DashboardHeader() {
                     }
                 `}</style>
             </div>
-            <div className="flex items-center gap-4 pl-4">
-                <span className="text-sm hidden sm:inline">{user}</span>
+            <div className="flex items-center gap-2 pl-6 text-xs text-muted-foreground">
+                <span className="opacity-40">|</span>
+                <span>
+                    Powered by{' '}
+                    <a
+                        href="https://www.coingecko.com/en/api"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline"
+                    >
+                        CoinGecko API
+                    </a>
+                </span>
+            </div>
+            <div className="flex items-center gap-2 pl-4">
                 <ThemeToggle />
                 <Button variant="ghost" size="icon" className="relative">
                     <Bell className="h-4 w-4" />
-                    <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" />
+                    {/* <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" /> */}
                     <span className="sr-only">Notifications</span>
                 </Button>
             </div>

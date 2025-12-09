@@ -2,28 +2,18 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { API_ENDPOINTS } from '@/lib/api-config';
-
-// Types
-interface TickerItem {
-    symbol: string;
-    pair: string;
-    price: number;
-    change: number;
-    volume24h: number;
-    high24h: number;
-    low24h: number;
-}
+import { TickerItem } from '@/types/ticker';
 
 interface UseTickerOptions {
     symbols?: string[];
     autoFetch?: boolean;
 }
 
-const POLL_INTERVAL = 3000; // 3 seconds for real-time updates
+const POLL_INTERVAL = 30000; // 30 seconds for real-time updates
 
 /**
  * Hook for fetching and polling cryptocurrency ticker data
- * Automatically refetches every 3 seconds for real-time updates
+ * Automatically refetches every 30 seconds for real-time updates
  */
 export function useTicker(options?: UseTickerOptions) {
     const [data, setData] = useState<TickerItem[]>([]);
