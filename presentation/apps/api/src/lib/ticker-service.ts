@@ -84,8 +84,8 @@ export async function fetchTickerData(): Promise<TickerItem[]> {
                 price: price,
                 change: coinData.usd_24h_change || 0,
                 volume24h: coinData.usd_24h_vol || 0,
-                high24h: coinData.usd_24h_high || coinData.usd,
-                low24h: coinData.usd_24h_low || coinData.usd,
+                high24h: coinData.usd_24h_high ?? 0,
+                low24h: coinData.usd_24h_low ?? 0,
             });
         }
 
