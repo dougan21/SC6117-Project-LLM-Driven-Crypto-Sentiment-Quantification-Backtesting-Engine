@@ -94,7 +94,7 @@ export function DashboardHeader() {
                 <ThemeToggle />
                 <Button variant="ghost" size="icon" className="relative">
                     <Bell className="h-4 w-4" />
-                    {/* <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" /> */}
+                    {/* TODO: Notification badge temporarily disabled due to lack of notification feature. Re-enable when notification system is implemented. */}
                     <span className="sr-only">Notifications</span>
                 </Button>
             </div>
