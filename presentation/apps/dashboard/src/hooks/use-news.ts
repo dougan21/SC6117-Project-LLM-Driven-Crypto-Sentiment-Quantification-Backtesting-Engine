@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { API_ENDPOINTS } from '@/lib/api-config';
 
 // Types
@@ -27,14 +27,23 @@ export function useNews(options?: UseNewsOptions) {
     const [news, setNews] = useState<NewsItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+
+    // useRef aboids double fetch on mount in StrictMode
+    const isFirstLoad = useRef(true);
+
     const limit = options?.limit || 10;
     const autoFetch = options?.autoFetch !== false; // Default true
 
-    // TODO: News should be sorted by timestamp descending
     // TODO: Display full title and abstract upon hover
-    const fetchNews = async () => {
+    /**
+     * Fetch News 核心逻辑
+     * @param isBackground - is background fetch (true-->do not show loading, false=show loading)
+     */
+    const fetchNews = useCallback(async (isBackground = false) => {
         try {
-            setLoading(true);
+            if (!isBackground) {
+                setLoading(true);
+            }
             const queryParams = new URLSearchParams();
             queryParams.append('limit', String(limit));
 
@@ -45,17 +54,29 @@ export function useNews(options?: UseNewsOptions) {
                 throw new Error(`Failed to fetch news: ${response.statusText}`);
             }
 
-            const newsData: NewsItem[] = await response.json();
+            let newsData: NewsItem[] = await response.json();
+            // according to timestamp desc
+            newsData = newsData.sort((a, b) => 
+                new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            );
+
             setNews(newsData);
             setError(null);
         } catch (err) {
+            console.error("News fetch error:", err);
             setError(err instanceof Error ? err : new Error('Unknown error'));
-            // Fallback: gracefully handle error without mock data
-            setNews([]);
+
+            // background fetch do not clear existing news
+            if (!isBackground) {
+                setNews([]);
+            }
         } finally {
-            setLoading(false);
+            // whatever background or not, set loading false
+            if (!isBackground) {
+                setLoading(false);
+            }
         }
-    };
+    }, [limit]);
 
     useEffect(() => {
         if (!autoFetch) return;
@@ -64,10 +85,18 @@ export function useNews(options?: UseNewsOptions) {
         fetchNews();
 
         // Set up polling interval
-        const interval = setInterval(fetchNews, POLL_INTERVAL);
+        const interval = setInterval(() => {
+            fetchNews(true); // <--- background fetch
+        }, POLL_INTERVAL);
 
         return () => clearInterval(interval);
-    }, [limit, autoFetch]);
+    }, [fetchNews, autoFetch]);
 
-    return { news, loading, error, refetch: fetchNews };
+    return { 
+        news, 
+        loading, 
+        error, 
+        // Expose manual refresh for buttons, usually want to show loading state, so pass false
+        refetch: () => fetchNews(false) 
+    };
 }
