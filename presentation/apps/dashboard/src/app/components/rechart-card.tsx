@@ -12,10 +12,15 @@ import {
     ResponsiveContainer,
 } from 'recharts';
 import { useChartData } from '@/hooks/use-chart-data';
-import { ChartDataParams } from '@/lib/mock-chart-data';
 
 interface RechartCardProps {
     onCryptoPairChange?: (pair: string) => void;
+}
+
+interface ChartDataParams {
+    startDateTime?: string; // ISO 8601 format: YYYY-MM-DDTHH:mm
+    endDateTime?: string; // ISO 8601 format: YYYY-MM-DDTHH:mm
+    cryptoPair?: string; // Cryptocurrency pair (default: BTC/USD)
 }
 
 /**
