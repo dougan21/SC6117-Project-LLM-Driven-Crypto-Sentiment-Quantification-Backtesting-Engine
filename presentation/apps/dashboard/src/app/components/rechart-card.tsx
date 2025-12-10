@@ -62,11 +62,12 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
         return end - start <= 24 * 60 * 60 * 1000;
     }, [chartParams.startDateTime, chartParams.endDateTime]);
 
-    // Format chart data with display-friendly time labels
+    // Format chart data with display-friendly time labels and numeric timestamps
     const formattedChartData = useMemo(() => {
         return chartData.map((point) => ({
             ...point,
             displayTime: formatTimeLabel(point.time, isShortRange),
+            timestamp: new Date(point.time).getTime(), // Convert to numeric timestamp for proper spacing
         }));
     }, [chartData, isShortRange]);
 
@@ -191,7 +192,19 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                             margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
                         >
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="displayTime" />
+                            <XAxis
+                                dataKey="timestamp"
+                                type="number"
+                                domain={['dataMin', 'dataMax']}
+                                tickFormatter={(timestamp) => {
+                                    const date = new Date(timestamp);
+                                    return formatTimeLabel(
+                                        date.toISOString(),
+                                        isShortRange
+                                    );
+                                }}
+                                scale="time"
+                            />
                             <YAxis
                                 domain={[10000, 'auto']}
                                 label={{
