@@ -1,0 +1,374 @@
+[
+  {
+    "time": "06:00",
+    "holdValue": 100000.0,
+    "strategyValue": 100000.0
+  },
+  {
+    "time": "06:05",
+    "holdValue": 100010.95317937095,
+    "strategyValue": 100000.0
+  },
+  {
+    "time": "06:10",
+    "holdValue": 99842.44272751016,
+    "strategyValue": 100000.0,
+    "events": [
+      {
+        "timestamp": "2025-07-17T06:10:00+00:00",
+        "action": "BUY",
+        "trigger": "Sentiment strategy signal"
+      }
+    ]
+  },
+  {
+    "time": "06:15",
+    "holdValue": 99753.49448549544,
+    "strategyValue": 99991.09113924051
+  },
+  {
+    "time": "06:20",
+    "holdValue": 100069.07243421773,
+    "strategyValue": 100057.03369520145
+  },
+  {
+    "time": "06:25",
+    "holdValue": 99977.81559901252,
+    "strategyValue": 100029.69179327897
+  },
+  {
+    "time": "06:30",
+    "holdValue": 99883.93842628089,
+    "strategyValue": 99995.11265651297
+  },
+  {
+    "time": "06:35",
+    "holdValue": 99781.21445482656,
+    "strategyValue": 99952.04981655214
+  },
+  {
+    "time": "06:40",
+    "holdValue": 99775.88109902517,
+    "strategyValue": 99949.61568397775
+  },
+  {
+    "time": "06:45",
+    "holdValue": 99793.92856841945,
+    "strategyValue": 99958.28658390649
+  },
+  {
+    "time": "06:50",
+    "holdValue": 99798.42779748411,
+    "strategyValue": 99960.50705481743
+  },
+  {
+    "time": "06:55",
+    "holdValue": 99802.4299207158,
+    "strategyValue": 99962.51664406876
+  },
+  {
+    "time": "07:00",
+    "holdValue": 99569.39681683753,
+    "strategyValue": 99844.6604389687
+  },
+  {
+    "time": "07:05",
+    "holdValue": 99393.01692687486,
+    "strategyValue": 99753.17732273984
+  },
+  {
+    "time": "07:10",
+    "holdValue": 99476.9772595145,
+    "strategyValue": 99798.18442024977
+  },
+  {
+    "time": "07:15",
+    "holdValue": 99421.16659785822,
+    "strategyValue": 99768.62560652892
+  },
+  {
+    "time": "07:20",
+    "holdValue": 99407.70261275454,
+    "strategyValue": 99761.75728489117
+  },
+  {
+    "time": "07:25",
+    "holdValue": 99364.48810737484,
+    "strategyValue": 99740.64193649107
+  },
+  {
+    "time": "07:30",
+    "holdValue": 99548.2740316968,
+    "strategyValue": 99826.47883554964
+  },
+  {
+    "time": "07:35",
+    "holdValue": 99620.93573853918,
+    "strategyValue": 99859.01538709772
+  },
+  {
+    "time": "07:40",
+    "holdValue": 99883.27280999604,
+    "strategyValue": 99941.21093166432
+  },
+  {
+    "time": "07:45",
+    "holdValue": 99775.41769528254,
+    "strategyValue": 99917.59839874688
+  },
+  {
+    "time": "07:50",
+    "holdValue": 99704.90449670139,
+    "strategyValue": 99906.78314095116
+  },
+  {
+    "time": "07:55",
+    "holdValue": 99683.8322646962,
+    "strategyValue": 99904.51935655989
+  },
+  {
+    "time": "08:00",
+    "holdValue": 99576.18778804754,
+    "strategyValue": 99896.42287617837
+  },
+  {
+    "time": "08:05",
+    "holdValue": 99530.90902963254,
+    "strategyValue": 99894.03654289045
+  },
+  {
+    "time": "08:10",
+    "holdValue": 99533.46196297822,
+    "strategyValue": 99894.13076682955
+  },
+  {
+    "time": "08:15",
+    "holdValue": 99611.66766368684,
+    "strategyValue": 99896.15121401359
+  },
+  {
+    "time": "08:20",
+    "holdValue": 99594.53015073258,
+    "strategyValue": 99895.8415272742
+  },
+  {
+    "time": "08:25",
+    "holdValue": 99642.74941653255,
+    "strategyValue": 99896.45157923081
+  },
+  {
+    "time": "08:30",
+    "holdValue": 99679.84699250969,
+    "strategyValue": 99896.77996342148
+  },
+  {
+    "time": "08:35",
+    "holdValue": 99677.19295289287,
+    "strategyValue": 99896.76352417465
+  },
+  {
+    "time": "08:40",
+    "holdValue": 99752.01159351906,
+    "strategyValue": 99897.08793389649
+  },
+  {
+    "time": "08:45",
+    "holdValue": 99692.68748894146,
+    "strategyValue": 99896.90801000892
+  },
+  {
+    "time": "08:50",
+    "holdValue": 99675.85329480057,
+    "strategyValue": 99896.87224934425
+  },
+  {
+    "time": "08:55",
+    "holdValue": 99699.99241702961,
+    "strategyValue": 99896.90815029506
+  },
+  {
+    "time": "09:00",
+    "holdValue": 99764.58247322786,
+    "strategyValue": 99896.97537720854
+  },
+  {
+    "time": "09:05",
+    "holdValue": 99915.6015401855,
+    "strategyValue": 99897.08533508929
+  },
+  {
+    "time": "09:10",
+    "holdValue": 99891.00743973641,
+    "strategyValue": 99897.07281904416
+  },
+  {
+    "time": "09:15",
+    "holdValue": 99918.43251577677,
+    "strategyValue": 99897.08259116701
+  },
+  {
+    "time": "09:20",
+    "holdValue": 100149.54460050382,
+    "strategyValue": 99897.14022036774
+  },
+  {
+    "time": "09:25",
+    "holdValue": 100378.23856024668,
+    "strategyValue": 99897.18004663095
+  },
+  {
+    "time": "09:30",
+    "holdValue": 100203.07194553742,
+    "strategyValue": 99897.1587420094
+  },
+  {
+    "time": "09:35",
+    "holdValue": 100218.06095023043,
+    "strategyValue": 99897.16002036525
+  },
+  {
+    "time": "09:40",
+    "holdValue": 100254.48448440013,
+    "strategyValue": 99897.16219453845
+  },
+  {
+    "time": "09:45",
+    "holdValue": 100222.58545586289,
+    "strategyValue": 99897.16086215341
+  },
+  {
+    "time": "09:50",
+    "holdValue": 100179.46363123172,
+    "strategyValue": 99897.15960094848
+  },
+  {
+    "time": "09:55",
+    "holdValue": 100069.37575303107,
+    "strategyValue": 99897.15734612283
+  },
+  {
+    "time": "10:00",
+    "holdValue": 100010.96160489353,
+    "strategyValue": 99897.15650769236
+  },
+  {
+    "time": "10:05",
+    "holdValue": 99965.56488916225,
+    "strategyValue": 99897.15605131396
+  },
+  {
+    "time": "10:10",
+    "holdValue": 99954.45162486203,
+    "strategyValue": 99897.15597307241
+  },
+  {
+    "time": "10:15",
+    "holdValue": 99970.02199061395,
+    "strategyValue": 99897.15604981579
+  },
+  {
+    "time": "10:20",
+    "holdValue": 99953.7438809642,
+    "strategyValue": 99897.15599366234
+  },
+  {
+    "time": "10:25",
+    "holdValue": 99895.7762855241,
+    "strategyValue": 99897.15585366279
+  },
+  {
+    "time": "10:30",
+    "holdValue": 99839.99932595818,
+    "strategyValue": 99897.15575931186
+  },
+  {
+    "time": "10:35",
+    "holdValue": 99835.06196971866,
+    "strategyValue": 99897.15575346226
+  },
+  {
+    "time": "10:40",
+    "holdValue": 99673.49414847455,
+    "strategyValue": 99897.1556194618
+  },
+  {
+    "time": "10:45",
+    "holdValue": 99665.22028528819,
+    "strategyValue": 99897.15561465052
+  },
+  {
+    "time": "10:50",
+    "holdValue": 99634.13010691987,
+    "strategyValue": 99893.37546757518
+  },
+  {
+    "time": "10:55",
+    "holdValue": 99707.64279154413,
+    "strategyValue": 99909.0415896482
+  },
+  {
+    "time": "11:00",
+    "holdValue": 99616.50391365524,
+    "strategyValue": 99883.02644111484
+  },
+  {
+    "time": "11:05",
+    "holdValue": 99639.48873928902,
+    "strategyValue": 99890.95977143616
+  },
+  {
+    "time": "11:10",
+    "holdValue": 99624.8788831127,
+    "strategyValue": 99885.25718875554
+  },
+  {
+    "time": "11:15",
+    "holdValue": 99621.71088661772,
+    "strategyValue": 99883.89847564067
+  },
+  {
+    "time": "11:20",
+    "holdValue": 99619.89939926022,
+    "strategyValue": 99883.09406042741
+  },
+  {
+    "time": "11:25",
+    "holdValue": 99567.17247887298,
+    "strategyValue": 99859.64641015968
+  },
+  {
+    "time": "11:30",
+    "holdValue": 99548.99020111721,
+    "strategyValue": 99851.73907726425
+  },
+  {
+    "time": "11:35",
+    "holdValue": 99578.84182766434,
+    "strategyValue": 99860.82758746925
+  },
+  {
+    "time": "11:40",
+    "holdValue": 99546.59735270077,
+    "strategyValue": 99853.95710295599
+  },
+  {
+    "time": "11:45",
+    "holdValue": 99501.6724662347,
+    "strategyValue": 99847.25474137142
+  },
+  {
+    "time": "11:50",
+    "holdValue": 99493.14583737052,
+    "strategyValue": 99846.36393533104
+  },
+  {
+    "time": "11:55",
+    "holdValue": 99416.95383656169,
+    "strategyValue": 99840.79148052845
+  },
+  {
+    "time": "12:00",
+    "holdValue": 99421.1750233808,
+    "strategyValue": 99841.00774155578
+  }
+]

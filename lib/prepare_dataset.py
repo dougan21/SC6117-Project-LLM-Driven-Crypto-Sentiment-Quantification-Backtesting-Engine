@@ -1,9 +1,11 @@
 import argparse
 from pathlib import Path
+from datetime import datetime
 
 import pandas as pd
 
 from data_processor import SentimentAggregator
+from klineAcquision import parse_hourly_datetime
 
 
 def load_price_parquet(path: str) -> pd.DataFrame:
@@ -34,12 +36,28 @@ def build_sentiment_5m(sentiment_csv: str, decay_span: int = 12) -> pd.DataFrame
 def merge_price_and_sentiment(
     price_df: pd.DataFrame,
     sentiment_df: pd.DataFrame,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
 ) -> pd.DataFrame:
-    """Left-join price and sentiment on timestamp index and fill missing sentiment with 0."""
-    # Align sentiment to price time range
-    start_ts = price_df.index.min()
-    end_ts = price_df.index.max()
-    sentiment_df = sentiment_df.loc[start_ts:end_ts]
+    """Left-join price and sentiment on timestamp index and fill missing sentiment with 0.
+
+    如果提供了 start_time / end_time，则在合并前先将价格与情绪都裁剪到该时间窗口内。
+    """
+
+    if start_time is not None:
+        price_df = price_df[price_df.index >= start_time]
+        sentiment_df = sentiment_df[sentiment_df.index >= start_time]
+
+    if end_time is not None:
+        price_df = price_df[price_df.index <= end_time]
+        sentiment_df = sentiment_df[sentiment_df.index <= end_time]
+
+    # 如果没有指定，则使用价格数据自身的时间范围对情绪做一次对齐
+    if start_time is None or end_time is None:
+        if not price_df.empty:
+            start_ts = price_df.index.min()
+            end_ts = price_df.index.max()
+            sentiment_df = sentiment_df.loc[start_ts:end_ts]
 
     merged = price_df.join(sentiment_df, how="left")
     if "sentiment_score" not in merged.columns:
@@ -54,6 +72,8 @@ def prepare_dataset(
     sentiment_csv: str,
     out_path: str,
     decay_span: int = 12,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
 ) -> None:
     """High-level helper to build a merged 5m price+sentiment dataset.
 
@@ -63,7 +83,7 @@ def prepare_dataset(
     """
     price_df = load_price_parquet(price_parquet)
     sent_df = build_sentiment_5m(sentiment_csv, decay_span=decay_span)
-    merged_df = merge_price_and_sentiment(price_df, sent_df)
+    merged_df = merge_price_and_sentiment(price_df, sent_df, start_time=start_time, end_time=end_time)
 
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -100,13 +120,31 @@ def main() -> None:
         default=12,
         help="EWMA decay span for sentiment (in 5-min bars).",
     )
+    parser.add_argument(
+        "--start",
+        type=str,
+        default=None,
+        help="起始时间（UTC），小时粒度，例如 2025-12-01 08 或 2025-12-01T08:00。可选；不填则使用价格文件自身最小时间。",
+    )
+    parser.add_argument(
+        "--end",
+        type=str,
+        default=None,
+        help="结束时间（UTC），小时粒度，例如 2025-12-03 08 或 2025-12-03T08:00。可选；不填则使用价格文件自身最大时间。",
+    )
 
     args = parser.parse_args()
+
+    start_time: datetime | None = parse_hourly_datetime(args.start) if args.start else None
+    end_time: datetime | None = parse_hourly_datetime(args.end) if args.end else None
+
     prepare_dataset(
         price_parquet=args.price_parquet,
         sentiment_csv=args.sentiment_csv,
         out_path=args.out,
         decay_span=args.decay_span,
+        start_time=start_time,
+        end_time=end_time,
     )
 
 
