@@ -114,22 +114,8 @@ function generateMockChartData(params?: ChartDataParams): ChartDataPoint[] {
     for (let i = 0; i < dataPoints; i++) {
         const currentTime = new Date(startTime.getTime() + i * intervalMs);
 
-        // Format time based on time range
-        let timeLabel: string;
-        if (timeRangeMs <= 24 * 60 * 60 * 1000) {
-            // Less than or equal to 24 hours: show time
-            timeLabel = currentTime.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-            });
-        } else if (timeRangeMs <= 30 * 24 * 60 * 60 * 1000) {
-            // Less than or equal to 30 days: show date
-            timeLabel = currentTime.toISOString().split('T')[0];
-        } else {
-            // More than 30 days: show date
-            timeLabel = currentTime.toISOString().split('T')[0];
-        }
+        // Always use ISO-8601 format for time
+        const timeLabel = currentTime.toISOString();
 
         const priceChange = Math.sin(i / 4) * 2000 + Math.random() * 1000 - 500;
         const holdValue = openingPrice + priceChange;

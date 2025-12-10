@@ -39,44 +39,53 @@ export function useNews(options?: UseNewsOptions) {
      * Fetch News 核心逻辑
      * @param isBackground - is background fetch (true-->do not show loading, false=show loading)
      */
-    const fetchNews = useCallback(async (isBackground = false) => {
-        try {
-            if (!isBackground) {
-                setLoading(true);
+    const fetchNews = useCallback(
+        async (isBackground = false) => {
+            try {
+                if (!isBackground) {
+                    setLoading(true);
+                }
+                const queryParams = new URLSearchParams();
+                queryParams.append('limit', String(limit));
+
+                const url = `${API_ENDPOINTS.news}?${queryParams}`;
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(
+                        `Failed to fetch news: ${response.statusText}`
+                    );
+                }
+
+                let newsData: NewsItem[] = await response.json();
+                // according to timestamp desc
+                newsData = newsData.sort(
+                    (a, b) =>
+                        new Date(b.timestamp).getTime() -
+                        new Date(a.timestamp).getTime()
+                );
+
+                setNews(newsData);
+                setError(null);
+            } catch (err) {
+                console.error('News fetch error:', err);
+                setError(
+                    err instanceof Error ? err : new Error('Unknown error')
+                );
+
+                // background fetch do not clear existing news
+                if (!isBackground) {
+                    setNews([]);
+                }
+            } finally {
+                // whatever background or not, set loading false
+                if (!isBackground) {
+                    setLoading(false);
+                }
             }
-            const queryParams = new URLSearchParams();
-            queryParams.append('limit', String(limit));
-
-            const url = `${API_ENDPOINTS.news}?${queryParams}`;
-            const response = await fetch(url);
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch news: ${response.statusText}`);
-            }
-
-            let newsData: NewsItem[] = await response.json();
-            // according to timestamp desc
-            newsData = newsData.sort((a, b) => 
-                new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            );
-
-            setNews(newsData);
-            setError(null);
-        } catch (err) {
-            console.error("News fetch error:", err);
-            setError(err instanceof Error ? err : new Error('Unknown error'));
-
-            // background fetch do not clear existing news
-            if (!isBackground) {
-                setNews([]);
-            }
-        } finally {
-            // whatever background or not, set loading false
-            if (!isBackground) {
-                setLoading(false);
-            }
-        }
-    }, [limit]);
+        },
+        [limit]
+    );
 
     useEffect(() => {
         if (!autoFetch) return;
@@ -92,11 +101,11 @@ export function useNews(options?: UseNewsOptions) {
         return () => clearInterval(interval);
     }, [fetchNews, autoFetch]);
 
-    return { 
-        news, 
-        loading, 
-        error, 
+    return {
+        news,
+        loading,
+        error,
         // Expose manual refresh for buttons, usually want to show loading state, so pass false
-        refetch: () => fetchNews(false) 
+        refetch: () => fetchNews(false),
     };
 }

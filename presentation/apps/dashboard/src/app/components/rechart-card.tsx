@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     ComposedChart,
     Line,
@@ -18,7 +18,29 @@ interface RechartCardProps {
     onCryptoPairChange?: (pair: string) => void;
 }
 
+/**
+ * Format ISO-8601 time string for display based on time range
+ * - Less than or equal to 24 hours: show time only (HH:mm)
+ * - More than 24 hours: show date only (MM/DD)
+ */
+function formatTimeLabel(isoString: string, isShortRange: boolean): string {
+    const date = new Date(isoString);
+    if (isShortRange) {
+        return date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        });
+    } else {
+        return date.toLocaleDateString('en-US', {
+            month: '2-digit',
+            day: '2-digit',
+        });
+    }
+}
+
 export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
+    // TODO: Set proper default value here
     const [chartParams, setChartParams] = useState<ChartDataParams>({
         startDateTime: '2025-01-01T00:00',
         endDateTime: new Date().toISOString().slice(0, 16),
@@ -26,6 +48,22 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
     });
 
     const { data: chartData, loading, error } = useChartData(chartParams);
+
+    // Determine if time range is <= 24 hours for display formatting
+    const isShortRange = useMemo(() => {
+        if (!chartParams.startDateTime || !chartParams.endDateTime) return true;
+        const start = new Date(chartParams.startDateTime).getTime();
+        const end = new Date(chartParams.endDateTime).getTime();
+        return end - start <= 24 * 60 * 60 * 1000;
+    }, [chartParams.startDateTime, chartParams.endDateTime]);
+
+    // Format chart data with display-friendly time labels
+    const formattedChartData = useMemo(() => {
+        return chartData.map((point) => ({
+            ...point,
+            displayTime: formatTimeLabel(point.time, isShortRange),
+        }));
+    }, [chartData, isShortRange]);
 
     useEffect(() => {
         if (onCryptoPairChange && chartParams.cryptoPair) {
@@ -41,7 +79,7 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
             return (
                 <div className="bg-white dark:bg-slate-900 p-3 rounded border border-gray-300 dark:border-slate-600 shadow-md">
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                        {data.time}
+                        {data.displayTime}
                     </p>
                     <p className="text-sm text-emerald-600 dark:text-emerald-400">
                         Hold Value: ${data.holdValue.toLocaleString()}
@@ -144,11 +182,11 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                 {!loading && !error && (
                     <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart
-                            data={chartData}
+                            data={formattedChartData}
                             margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
                         >
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="time" />
+                            <XAxis dataKey="displayTime" />
                             <YAxis
                                 domain={[10000, 'auto']}
                                 label={{
