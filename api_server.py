@@ -6,6 +6,8 @@ import uvicorn
 import httpx
 import uuid
 import os
+import argparse
+import uvicorn
 
 from lib.sentiment_engine import CryptoSentimentRunner
 from lib.logger import LOG, LOG_ERR
@@ -237,5 +239,35 @@ async def fetch_news_and_analyze(
 # start entry point
 # ==========================================
 if __name__ == "__main__":
-    # start server, port 8000
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    # define command-line arguments
+    parser = argparse.ArgumentParser(description="Start the Crypto Sentiment API Server")
+    parser.add_argument(
+        "--port", 
+        type=int, 
+        default=8000, 
+        help="Port to run the server on"
+    )
+    parser.add_argument(
+        "--host", 
+        type=str, 
+        default="0.0.0.0", 
+        help="Host to run the server on"
+    )
+    parser.add_argument(
+        "--reload", 
+        action="store_true", 
+        help="Enable auto-reload (Dev mode)"
+    )
+
+    # parse arguments
+    args = parser.parse_args()
+
+    # start Uvicorn
+    print(f"Server running on http://{args.host}:{args.port}")
+    uvicorn.run(
+        "api_server:app", 
+        host=args.host, 
+        port=args.port, 
+        reload=args.reload
+    )
