@@ -20,8 +20,7 @@ export const config: ApiConfig = {
 
     // Remote server addresses (configure these when ready to use actual servers)
     remoteServers: {
-        // server1: 'http://kr2.chencraft.com:9452',
-        server1: 'http://localhost:9452',
+        server1: 'http://kr2.chencraft.com:9452',
         server2: '',
     },
 };
