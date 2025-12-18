@@ -16,4 +16,12 @@ done
 
 echo "Starting API Server via Python Script..."
 
-python api_server.py $ARGS
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Use virtual environment Python if available, otherwise use system Python
+if [ -f "$SCRIPT_DIR/venv/bin/python" ]; then
+    "$SCRIPT_DIR/venv/bin/python" api_server.py $ARGS
+else
+    python api_server.py $ARGS
+fi

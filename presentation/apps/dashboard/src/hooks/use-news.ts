@@ -29,7 +29,7 @@ export function useNews(options?: UseNewsOptions) {
     const [error, setError] = useState<Error | null>(null);
 
     // useRef aboids double fetch on mount in StrictMode
-    const isFirstLoad = useRef(true);
+    const _isFirstLoad = useRef(true);
 
     const limit = options?.limit || 10;
     const autoFetch = options?.autoFetch !== false; // Default true

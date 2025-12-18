@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 from typing import Dict, Optional
 
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from langchain.output_parsers import PydanticOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
 # ==========================================
@@ -22,6 +22,8 @@ if not api_key:
 # ==========================================
 # 1. Pydantic Structure
 # ==========================================
+
+
 class SentimentResult(BaseModel):
     score: float = Field(description="Sentiment score between -1.0 and 1.0.")
     reasoning: str = Field(description="Brief reason, max 1 sentence.")
@@ -29,28 +31,31 @@ class SentimentResult(BaseModel):
 # ==========================================
 # 2. Strategy + Cache + Sentiment Engine
 # ==========================================
+
+
 class CryptoSentimentRunner:
-    def __init__(self, 
-                 strategy_name: Optional[str] = None, 
+    def __init__(self,
+                 strategy_name: Optional[str] = None,
                  config_file: str = "./config/scoring_strategies.json",
                  cache_file: str = "./data/sentiment_cache.json",
                  model: str = "gpt-4o-mini"):
-                #  model: str = "Qwen/Qwen2.5-7B-Instruct"):
-        
+        #  model: str = "Qwen/Qwen2.5-7B-Instruct"):
+
         self.config_file = config_file
         self.cache_file = cache_file
-        
+
         # 1. Load strategy rules
         # self.current_strategy_name is used to generate cache Hash to distinguish different strategies
-        self.rules_text, self.current_strategy_name = self._load_strategy_rules(strategy_name)
-        
+        self.rules_text, self.current_strategy_name = self._load_strategy_rules(
+            strategy_name)
+
         # 2. Load local cache (result cache)
         self.cache = self._load_cache()
-        
+
         # 3. Initialize LangChain components
         self.parser = PydanticOutputParser(pydantic_object=SentimentResult)
         self.llm = ChatOpenAI(model=model, temperature=0, api_key=api_key)
-        
+
         template = """
         You are a crypto quantitative researcher. Analyze the immediate market sentiment.
         
@@ -63,13 +68,13 @@ class CryptoSentimentRunner:
 
         Headline: {headline}
         """
-        
+
         self.prompt = ChatPromptTemplate.from_template(template).partial(
             strategy_name=self.current_strategy_name,
             scoring_rules=self.rules_text,
             format_instructions=self.parser.get_format_instructions()
         )
-        
+
         self.chain = self.prompt | self.llm | self.parser
 
     # --- Strategy Loading Logic ---
@@ -85,15 +90,16 @@ class CryptoSentimentRunner:
         # Determine strategy name
         if not strategy_name:
             strategy_name = config.get("default_strategy", "standard_crypto")
-            
+
         print(f"Using Strategy: [{strategy_name}]")
-        
+
         rules = config["strategies"].get(strategy_name, [])
         if not rules:
             raise ValueError(f"Strategy '{strategy_name}' not found!")
 
         # Format rules text
-        formatted = "\n".join([f"- Score {r.get('score')}: {r.get('desc')}" for r in rules])
+        formatted = "\n".join(
+            [f"- Score {r.get('score')}: {r.get('desc')}" for r in rules])
         return formatted, strategy_name
 
     # --- Cache Management Logic ---
@@ -103,7 +109,7 @@ class CryptoSentimentRunner:
                 with open(self.cache_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
             except json.JSONDecodeError:
-                return {} # Reset if file is corrupted
+                return {}  # Reset if file is corrupted
         return {}
 
     def _save_cache(self):
@@ -134,39 +140,41 @@ class CryptoSentimentRunner:
         try:
             res = self.chain.invoke({"headline": headline})
             output = {"score": res.score, "reason": res.reasoning}
-            
+
             # Write to cache
             self.cache[item_hash] = output
             return output
-            
+
         except Exception as e:
             print(f"Error: {headline[:15]}... | {e}")
             return {"score": 0.0, "reason": "Error"}
 
     def run_csv(self, input_csv, output_csv, text_col='title', date_col='date', limit=None):
-        print(f"Processing: {input_csv} | Strategy: {self.current_strategy_name}")
+        print(
+            f"Processing: {input_csv} | Strategy: {self.current_strategy_name}")
         df = pd.read_csv(input_csv)
-        if limit: df = df.head(limit)
-        
+        if limit:
+            df = df.head(limit)
+
         results = []
-        
+
         for idx, row in df.iterrows():
             res = self.analyze_row(row[text_col])
-            
+
             results.append({
                 "timestamp": row[date_col],
                 "headline": row[text_col],
                 "score": res['score'],
                 "reason": res['reason']
             })
-            
+
             # Checkpoint: Save cache every 10 items
             if (idx + 1) % 10 == 0:
                 self._save_cache()
                 print(f"Processed {idx + 1}/{len(df)}")
-                
-        self._save_cache() # Save one last time at the end
-        
+
+        self._save_cache()  # Save one last time at the end
+
         final_df = pd.DataFrame(results)
         final_df.to_csv(output_csv, index=False)
         print(f"Done! Saved to {output_csv}")
@@ -176,7 +184,7 @@ class CryptoSentimentRunner:
 # ==========================================
 # if __name__ == "__main__":
 #     # Standard
-#     runner = CryptoSentimentRunner() 
+#     runner = CryptoSentimentRunner()
 #     runner.run_csv("news_data.csv", "results_standard.csv", limit=5)
 
 #     # non-standard strategy

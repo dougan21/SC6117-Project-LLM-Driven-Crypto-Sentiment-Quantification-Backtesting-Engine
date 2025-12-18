@@ -1,0 +1,20 @@
+[Unit]
+Description=SC6117 API Server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/Documents/SC6117
+Environment="PATH=/home/ubuntu/Documents/SC6117/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/ubuntu/Documents/SC6117/venv/bin/python /home/ubuntu/Documents/SC6117/api_server.py --port 9452
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sc6117-api
+
+[Install]
+WantedBy=multi-user.target
