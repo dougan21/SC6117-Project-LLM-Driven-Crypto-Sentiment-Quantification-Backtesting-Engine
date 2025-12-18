@@ -69,14 +69,6 @@ interface ChartDataParams {
     cryptoPair?: string;
 }
 
-interface NewsItem {
-    id: string;
-    title: string;
-    abstract: string;
-    timestamp: string;
-    sentiment: 'positive' | 'negative' | 'neutral';
-}
-
 interface ChatMessage {
     role: 'user' | 'assistant';
     content: string;
