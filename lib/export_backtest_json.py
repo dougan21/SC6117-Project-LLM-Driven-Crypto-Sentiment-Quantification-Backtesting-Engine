@@ -26,7 +26,7 @@ def compute_hold_equity(df: pd.DataFrame, price_col: str, initial_capital: float
     return equity
 
 
-def detect_events(df: pd.DataFrame) -> list[list[dict]]:
+def detect_events(df: pd.DataFrame, time_format: str) -> list[list[dict]]:
     if "position" not in df.columns:
         return [[] for _ in range(len(df))]
     pos = df["position"].to_numpy(dtype=float)
@@ -44,7 +44,7 @@ def detect_events(df: pd.DataFrame) -> list[list[dict]]:
         if action is not None:
             events_per_row[i].append(
                 {
-                    "timestamp": df.index[i].isoformat(),
+                    "timestamp": format_time(df.index[i], time_format),
                     "action": action,
                     "trigger": "Sentiment strategy signal",
                 }
@@ -53,12 +53,19 @@ def detect_events(df: pd.DataFrame) -> list[list[dict]]:
     return events_per_row
 
 
+def format_time(ts: pd.Timestamp, time_format: str) -> str:
+    ts = ts.tz_convert("UTC") if ts.tzinfo else ts.tz_localize("UTC")
+    if time_format.lower() == "iso":
+        return ts.isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return ts.strftime(time_format)
+
+
 def export_backtest_json(
     backtest_parquet: Path,
     price_col: str,
     output_json: Path,
     initial_capital: float = 100_000.0,
-    time_format: str = "%H:%M",
+    time_format: str = "iso",
 ) -> None:
     df = load_backtest(backtest_parquet)
 
@@ -68,12 +75,12 @@ def export_backtest_json(
     hold_equity = compute_hold_equity(df, price_col=price_col, initial_capital=initial_capital)
     strat_equity = df["equity"].astype(float) * initial_capital
 
-    events = detect_events(df)
+    events = detect_events(df, time_format=time_format)
 
     records = []
     for (ts, hold_v, strat_v, evts) in zip(df.index, hold_equity, strat_equity, events):
         item = {
-            "time": ts.strftime(time_format),
+            "time": format_time(ts, time_format),
             "holdValue": float(hold_v),
             "strategyValue": float(strat_v),
         }
@@ -94,7 +101,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--price-col", default="close", type=str, help="Price column for buy&hold benchmark")
     p.add_argument("--output-json", required=True, type=str, help="Output JSON file path")
     p.add_argument("--initial-capital", default=100_000.0, type=float, help="Initial capital for equity scaling")
-    p.add_argument("--time-format", default="%H:%M", type=str, help="strftime format for 'time' field")
+    p.add_argument(
+        "--time-format",
+        default="iso",
+        type=str,
+        help="Time format for 'time' field (use 'iso' for UTC ISO 8601 with milliseconds or provide strftime pattern)",
+    )
     return p.parse_args()
 
 
