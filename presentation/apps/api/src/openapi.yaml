@@ -99,17 +99,17 @@ paths:
                             examples:
                                 sample:
                                     value:
-                                        - time: '00:00'
+                                        - time: '2025-12-04T00:00:00.000Z'
                                           holdValue: 45000
                                           strategyValue: 45523
-                                        - time: '01:02'
+                                        - time: '2025-12-04T01:02:00.000Z'
                                           holdValue: 46245
                                           strategyValue: 45812
                                           events:
                                               - timestamp: '2025-12-04T01:02:00.000Z'
                                                 action: SELL
                                                 trigger: RSI oversold signal
-                                        - time: '02:05'
+                                        - time: '2025-12-04T02:05:00.000Z'
                                           holdValue: 45678
                                           strategyValue: 46234
 
@@ -270,9 +270,10 @@ components:
             properties:
                 time:
                     type: string
-                    description: Time/date label - format adapts based on time range (HH:MM for ≤24h, YYYY-MM-DD for >24h)
+                    format: date-time
+                    description: ISO-8601 formatted timestamp for this data point
                     examples:
-                        - '10:00'
+                        - '2025-12-04T10:00:00.000Z'
                 holdValue:
                     type: number
                     description: Portfolio value if bought at start and held (buy-and-hold strategy) in USD (integer)

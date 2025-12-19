@@ -6,6 +6,8 @@ import uvicorn
 import httpx
 import uuid
 import os
+import argparse
+import uvicorn
 
 from lib.sentiment_engine import CryptoSentimentRunner
 from lib.logger import LOG, LOG_ERR
@@ -13,9 +15,12 @@ from lib.logger import LOG, LOG_ERR
 # ==========================================
 # init Data Models
 # ==========================================
+
+
 class NewsRequest(BaseModel):
     headline: str
     strategy: Optional[str] = "standard_crypto"
+
 
 class AnalysisResponse(BaseModel):
     headline: str
@@ -23,12 +28,15 @@ class AnalysisResponse(BaseModel):
     reason: str
     strategy_used: str
 
+
 class ChatbotRequest(BaseModel):
-    message: str  
+    message: str
+
 
 class ChatbotResponse(BaseModel):
-    message: str 
+    message: str
     timestamp: str
+
 
 class NewsItem(BaseModel):
     id: str
@@ -36,6 +44,7 @@ class NewsItem(BaseModel):
     abstract: str
     timestamp: str
     sentiment: str  # "positive", "negative", "neutral"
+
 
 # ==========================================
 # init App & engine
@@ -50,18 +59,23 @@ app = FastAPI(
 # Using a global dictionary to cache Runners for different strategies
 runners = {}
 
+
 def get_runner(strategy_name: str):
     if strategy_name not in runners:
         # init new runner
-        runners[strategy_name] = CryptoSentimentRunner(strategy_name=strategy_name)
+        runners[strategy_name] = CryptoSentimentRunner(
+            strategy_name=strategy_name)
     return runners[strategy_name]
 
 # ==========================================
 # interfaces
 # ==========================================
+
+
 @app.get("/")
 def health_check():
     return {"status": "running", "service": "Sentiment Engine"}
+
 
 @app.post("/analyze", response_model=AnalysisResponse)
 async def analyze_news(request: NewsRequest):
@@ -71,10 +85,10 @@ async def analyze_news(request: NewsRequest):
     try:
         # 1. get corresponding strategy runner
         runner = get_runner(request.strategy)
-        
+
         # 2. call core logic (sync method can run in FastAPI, but consider making analyze_row async later)
         result = runner.analyze_row(request.headline)
-        
+
         # 3. return result (FastAPI will auto convert to JSON)
         return AnalysisResponse(
             headline=request.headline,
@@ -82,10 +96,11 @@ async def analyze_news(request: NewsRequest):
             reason=result['reason'],
             strategy_used=request.strategy
         )
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
 @app.post("/api/chatbot", response_model=ChatbotResponse)
 async def chatbot_endpoint(request: ChatbotRequest):
     """
@@ -97,9 +112,9 @@ async def chatbot_endpoint(request: ChatbotRequest):
     try:
         #  call core analysis logic
         # 'standard_crypto' for default strategy
-        runner = get_runner("standard_crypto") 
+        runner = get_runner("standard_crypto")
         result = runner.analyze_row(user_message)
-        
+
         score = result['score']
         reason = result['reason']
 
@@ -129,7 +144,7 @@ AI sentiment analysis:
 
 Action advice: {advice}
         """.strip()
-        
+
     except Exception as e:
         LOG_ERR(f"Error: {e}")
         ai_reply = "Sorry, I am currently unable to analyze this news. Please try again later or check the input content."
@@ -142,10 +157,12 @@ Action advice: {advice}
         timestamp=utc_time.isoformat()
     )
 
+
 @app.get("/api/news", response_model=List[NewsItem])
 async def fetch_news_and_analyze(
     # FastAPI get query parameters
-    limit: int = Query(5, ge=1, le=20, description="the number of news items to fetch (1-20)"), 
+    limit: int = Query(
+        5, ge=1, le=20, description="the number of news items to fetch (1-20)"),
     query: str = Query("cryptocurrency", description="search keyword")
 ):
     """
@@ -154,7 +171,8 @@ async def fetch_news_and_analyze(
     api_key = os.getenv("NEWS_API_KEY")
     if not api_key:
         LOG_ERR("[Debug] Error: NEWS_API_KEY not found")
-        raise HTTPException(status_code=500, detail="Server missing NEWS_API_KEY")
+        raise HTTPException(
+            status_code=500, detail="Server missing NEWS_API_KEY")
     LOG(f"[Debug] Got NewsAPI Key (length: {len(api_key)})")
 
     # Asynchronous request to News API
@@ -172,7 +190,7 @@ async def fetch_news_and_analyze(
         try:
             resp = await client.get(url, params=params)
             LOG(f"[Debug] NewsAPI response status code: {resp.status_code}")
-            
+
             # If NewsAPI returns an error, print the specific reason
             if resp.status_code != 200:
                 LOG_ERR(f"[Debug] NewsAPI error content: {resp.text}")
@@ -180,12 +198,13 @@ async def fetch_news_and_analyze(
             data = resp.json()
         except Exception as e:
             LOG_ERR(f"NewsAPI Error: {e}")
-            raise HTTPException(status_code=502, detail="Failed to fetch news from external provider")
+            raise HTTPException(
+                status_code=502, detail="Failed to fetch news from external provider")
 
     articles = data.get("articles", [])
     LOG(f"[Debug] Successfully fetched {len(articles)} news articles")
     processed_news = []
-    
+
     # Get sentiment analysis engine
     LOG("[Debug] Getting Sentiment Runner...")
     runner = get_runner("standard_crypto")
@@ -195,16 +214,17 @@ async def fetch_news_and_analyze(
         title = article.get("title", "No Title")
         LOG(f"[Debug] Analyzing article {idx+1}: {title[:30]}...")
         description = article.get("description") or "No description available."
-        abstract = description[:200] + "..." if len(description) > 200 else description
-        
+        abstract = description[:200] + \
+            "..." if len(description) > 200 else description
+
         # Concatenate content to feed to LLM
         text_to_analyze = f"{title}. {description}"
-        
+
         try:
             # Call quantification engine
             analysis_result = runner.analyze_row(text_to_analyze)
             score = analysis_result['score']
-            
+
             # Map score to label
             if score >= 0.2:
                 sentiment_label = "positive"
@@ -212,14 +232,15 @@ async def fetch_news_and_analyze(
                 sentiment_label = "negative"
             else:
                 sentiment_label = "neutral"
-                
+
         except Exception as e:
             LOG_ERR(f"Analysis Failed for {title}: {e}")
             score = 0.0
             sentiment_label = "neutral"
 
         # Construct return
-        pub_time = article.get("publishedAt") or datetime.now(timezone.utc).isoformat()
+        pub_time = article.get("publishedAt") or datetime.now(
+            timezone.utc).isoformat()
         unique_id = f"news-{idx}-{uuid.uuid4().hex[:8]}"
 
         processed_news.append(NewsItem(
@@ -237,5 +258,36 @@ async def fetch_news_and_analyze(
 # start entry point
 # ==========================================
 if __name__ == "__main__":
-    # start server, port 8000
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    # define command-line arguments
+    parser = argparse.ArgumentParser(
+        description="Start the Crypto Sentiment API Server")
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to run the server on"
+    )
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="0.0.0.0",
+        help="Host to run the server on"
+    )
+    parser.add_argument(
+        "--reload",
+        action="store_true",
+        help="Enable auto-reload (Dev mode)"
+    )
+
+    # parse arguments
+    args = parser.parse_args()
+
+    # start Uvicorn
+    print(f"Server running on http://{args.host}:{args.port}")
+    uvicorn.run(
+        "api_server:app",
+        host=args.host,
+        port=args.port,
+        reload=args.reload
+    )

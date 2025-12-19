@@ -69,14 +69,6 @@ interface ChartDataParams {
     cryptoPair?: string;
 }
 
-interface NewsItem {
-    id: string;
-    title: string;
-    abstract: string;
-    timestamp: string;
-    sentiment: 'positive' | 'negative' | 'neutral';
-}
-
 interface ChatMessage {
     role: 'user' | 'assistant';
     content: string;
@@ -114,22 +106,8 @@ function generateMockChartData(params?: ChartDataParams): ChartDataPoint[] {
     for (let i = 0; i < dataPoints; i++) {
         const currentTime = new Date(startTime.getTime() + i * intervalMs);
 
-        // Format time based on time range
-        let timeLabel: string;
-        if (timeRangeMs <= 24 * 60 * 60 * 1000) {
-            // Less than or equal to 24 hours: show time
-            timeLabel = currentTime.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-            });
-        } else if (timeRangeMs <= 30 * 24 * 60 * 60 * 1000) {
-            // Less than or equal to 30 days: show date
-            timeLabel = currentTime.toISOString().split('T')[0];
-        } else {
-            // More than 30 days: show date
-            timeLabel = currentTime.toISOString().split('T')[0];
-        }
+        // Always use ISO-8601 format for time
+        const timeLabel = currentTime.toISOString();
 
         const priceChange = Math.sin(i / 4) * 2000 + Math.random() * 1000 - 500;
         const holdValue = openingPrice + priceChange;
@@ -162,73 +140,6 @@ function generateMockChartData(params?: ChartDataParams): ChartDataPoint[] {
     }
 
     return data;
-}
-
-function generateMockNews(): NewsItem[] {
-    const titles = [
-        'Bitcoin Reaches New All-Time High',
-        'Ethereum Developers Announce Major Upgrade',
-        'Regulatory Clarity Expected in Q1 2025',
-        'Top Crypto Exchange Reports Record Trading Volume',
-        'New DeFi Protocol Launches with $50M TVL',
-        'Central Banks Study CBDC Implementation',
-        'Cryptocurrency Adoption Grows in Developing Nations',
-        'Mining Difficulty Reaches New Peak',
-        'Major Institution Adds Bitcoin to Treasury',
-        'Blockchain Technology Disrupts Supply Chain',
-    ];
-
-    const abstracts = [
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-        'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-        'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',
-        'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
-        'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.',
-        'Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores.',
-        'Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.',
-        'Sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.',
-        'Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam.',
-        'At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti.',
-    ];
-
-    const sentiments: ('positive' | 'negative' | 'neutral')[] = [
-        'negative',
-        'positive',
-        'neutral',
-        'negative',
-        'positive',
-        'neutral',
-        'positive',
-        'neutral',
-        'positive',
-        'positive',
-    ];
-
-    const news: NewsItem[] = [];
-
-    for (let i = 0; i < 10; i++) {
-        const now = new Date();
-        const minutesAgo = Math.floor(Math.random() * 1440);
-        const timestamp = new Date(
-            now.getTime() - minutesAgo * 60000
-        ).toISOString();
-
-        news.push({
-            id: `news-${i}-${Date.now()}`,
-            title: titles[i],
-            abstract: abstracts[i],
-            timestamp,
-            sentiment: sentiments[i],
-        });
-    }
-
-    // Sort by timestamp descending (newest first)
-    news.sort(
-        (a, b) =>
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-
-    return news;
 }
 
 const app = express();
@@ -299,25 +210,11 @@ app.get('/api/chart-data', async (req, res) => {
 // News endpoint
 app.get('/api/news', async (req, res) => {
     try {
-        if (apiConfig.useActualServer) {
-            // Relay request to remote server
-            const queryString = new URLSearchParams(
-                req.query as any
-            ).toString();
-            const path = `/api/news${queryString ? '?' + queryString : ''}`;
-            const data = await relayRequest(
-                apiConfig.remoteServers.server1,
-                path
-            );
-            res.status(200).json(data);
-        } else {
-            // Use mock data
-            const limit = req.query.limit
-                ? parseInt(req.query.limit as string, 10)
-                : 10;
-            const news = generateMockNews().slice(0, limit);
-            res.status(200).json(news);
-        }
+        // Relay request to remote server
+        const queryString = new URLSearchParams(req.query as any).toString();
+        const path = `/api/news${queryString ? '?' + queryString : ''}`;
+        const data = await relayRequest(apiConfig.remoteServers.server1, path);
+        res.status(200).json(data);
     } catch (error) {
         console.error('News error:', error);
         res.status(500).json({ error: 'Failed to fetch news' });
@@ -347,23 +244,14 @@ app.post('/api/chatbot', async (req, res) => {
             return;
         }
 
-        if (apiConfig.useActualServer) {
-            // Relay request to remote server
-            const data = await relayRequest(
-                apiConfig.remoteServers.server1,
-                '/api/chatbot',
-                'POST',
-                req.body
-            );
-            res.status(200).json(data);
-        } else {
-            // Use mock response
-            const response = {
-                message: `You said: "${message}". This is a mock response. The chatbot feature is under development.`,
-                timestamp: new Date().toISOString(),
-            };
-            res.status(200).json(response);
-        }
+        // Relay request to remote server
+        const data = await relayRequest(
+            apiConfig.remoteServers.server1,
+            '/api/chatbot',
+            'POST',
+            req.body
+        );
+        res.status(200).json(data);
     } catch (error) {
         console.error('Chatbot error:', error);
         res.status(500).json({ error: 'Failed to process chatbot request' });
