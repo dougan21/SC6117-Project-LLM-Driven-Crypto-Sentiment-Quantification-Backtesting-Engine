@@ -717,6 +717,56 @@ def chart_data(
                 # if conversion fails, leave records as-is
                 pass
 
+    # Normalize records so that the values at startDateTime become the baseline
+    # If a startDateTime was provided, find the first record at or after that timestamp
+    # and scale subsequent `holdValue` and `strategyValue` so that the baseline maps
+    # to `initial_capital` (preserves currency scale but anchors at requested start).
+    if records and startDateTime:
+        try:
+            s_req = datetime.fromisoformat(startDateTime.replace("Z", "+00:00")).astimezone(timezone.utc)
+        except Exception:
+            s_req = None
+
+        if s_req is not None and isinstance(records, list) and len(records) > 0:
+            # find first index with time >= s_req
+            baseline_idx = None
+            for idx, rec in enumerate(records):
+                try:
+                    t = datetime.fromisoformat(rec.get("time").replace("Z", "+00:00")).astimezone(timezone.utc)
+                except Exception:
+                    continue
+                if t >= s_req:
+                    baseline_idx = idx
+                    break
+
+            if baseline_idx is not None:
+                base_rec = records[baseline_idx]
+                try:
+                    base_hold = float(base_rec.get("holdValue") or 0.0)
+                except Exception:
+                    base_hold = 0.0
+                try:
+                    base_strat = float(base_rec.get("strategyValue") or 0.0)
+                except Exception:
+                    base_strat = 0.0
+
+                # Only normalize if baseline values are non-zero
+                if base_hold != 0.0 or base_strat != 0.0:
+                    for j in range(baseline_idx, len(records)):
+                        rec = records[j]
+                        try:
+                            hv = float(rec.get("holdValue") or 0.0)
+                            if base_hold and base_hold != 0.0:
+                                rec["holdValue"] = float(hv / base_hold * float(initial_capital))
+                        except Exception:
+                            pass
+                        try:
+                            sv = float(rec.get("strategyValue") or 0.0)
+                            if base_strat and base_strat != 0.0:
+                                rec["strategyValue"] = float(sv / base_strat * float(initial_capital))
+                        except Exception:
+                            pass
+
     payload = {
         "source": source or "unknown",
         "chosen_parquet": chosen_parquet,
