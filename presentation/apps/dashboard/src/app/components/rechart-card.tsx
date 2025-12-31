@@ -51,8 +51,14 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
     const [cryptoInput, setCryptoInput] = useState<string>('BTC/USD');
 
     // Actual params passed to hook; undefined => no auto-fetch
-    const [chartParams, setChartParams] = useState<ChartDataParams | undefined>(undefined);
-    const { data: chartData, loading, error } = useChartData(chartParams as any);
+    const [chartParams, setChartParams] = useState<ChartDataParams | undefined>(
+        undefined
+    );
+    const {
+        data: chartData,
+        loading,
+        error,
+    } = useChartData(chartParams as any);
 
     // Compute local min/max strings derived from UTC boundaries
     const utcMin = new Date('2025-07-01T00:00:00Z');
@@ -67,9 +73,6 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
         const minutes = pad(d.getMinutes());
         return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
-
-    const localMin = toLocalInputValue(new Date(utcMin));
-    const localMax = toLocalInputValue(new Date(utcMax));
 
     // Initialize time inputs to a system-time based window on mount (clamped to UTC allowed range)
     useEffect(() => {
@@ -192,12 +195,20 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                 <div className="flex items-end">
                     <button
                         onClick={() => {
-                            console.debug('[RechartCard] Enquiry clicked', { startInput, endInput, cryptoInput });
+                            console.debug('[RechartCard] Enquiry clicked', {
+                                startInput,
+                                endInput,
+                                cryptoInput,
+                            });
                             // Prevent duplicate or invalid requests
                             try {
                                 const startIso = new Date(startInput);
                                 const endIso = new Date(endInput);
-                                if (isNaN(startIso.getTime()) || isNaN(endIso.getTime())) return;
+                                if (
+                                    isNaN(startIso.getTime()) ||
+                                    isNaN(endIso.getTime())
+                                )
+                                    return;
                                 // Ensure within allowed UTC bounds
                                 const min = new Date('2025-07-01T00:00:00Z');
                                 const max = new Date('2025-08-01T00:00:00Z');
@@ -210,10 +221,18 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                                 } as ChartDataParams;
 
                                 // Avoid re-requesting identical params
-                                if (JSON.stringify(params) === JSON.stringify(chartParams)) return;
+                                if (
+                                    JSON.stringify(params) ===
+                                    JSON.stringify(chartParams)
+                                )
+                                    return;
                                 setChartParams(params);
                             } catch (e) {
-                                // swallow invalid date errors
+                                console.error(
+                                    '[RechartCard] Invalid date input',
+                                    e
+                                );
+                                return;
                             }
                         }}
                         disabled={loading}
