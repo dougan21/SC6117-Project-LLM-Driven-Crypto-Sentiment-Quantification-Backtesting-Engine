@@ -30,45 +30,109 @@ export function useChartData(params?: ChartDataParams) {
     const [data, setData] = useState<ChartDataPoint[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const [status, setStatus] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchData = async () => {
+        let cancelled = false;
+
+        const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+        const fetchWithPolling = async () => {
+            // If no params provided, do not fetch (caller must trigger by setting params)
+            if (!params || (Object.keys(params).length === 0)) {
+                setLoading(false);
+                setStatus(null);
+                return;
+            }
+
+            setLoading(true);
+            setError(null);
+            setStatus(null);
+
+            // Build query string from params
+            const queryParams = new URLSearchParams();
+            // Ensure times are sent as full ISO UTC (with 'Z'). If user inputs a local datetime
+            // without timezone, convert it to an ISO string.
+            const toIsoUtc = (v?: string) => {
+                if (!v) return undefined;
+                const d = new Date(v);
+                if (isNaN(d.getTime())) return v; // leave as-is if invalid
+                return d.toISOString();
+            };
+
+            const startIso = toIsoUtc(params?.startDateTime);
+            const endIso = toIsoUtc(params?.endDateTime);
+            if (startIso) queryParams.append('startDateTime', startIso);
+            if (endIso) queryParams.append('endDateTime', endIso);
+            if (params?.cryptoPair) queryParams.append('cryptoPair', params.cryptoPair);
+
+            const url = `${API_ENDPOINTS.chartData}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+            console.debug('[useChartData] fetching', { url, params: { startIso, endIso, crypto: params?.cryptoPair } });
+
+            const timeoutMs = 120_000; // total polling timeout
+            const start = Date.now();
+            let delay = 1000; // initial backoff
+            const maxDelay = 10_000;
+            const multiplier = 1.5;
+
             try {
-                setLoading(true);
+                while (!cancelled && Date.now() - start < timeoutMs) {
+                    const resp = await fetch(url, { method: 'GET' });
+                    console.debug('[useChartData] response status', resp.status);
 
-                // Build query string from params
-                const queryParams = new URLSearchParams();
-                if (params?.startDateTime)
-                    queryParams.append('startDateTime', params.startDateTime);
-                if (params?.endDateTime)
-                    queryParams.append('endDateTime', params.endDateTime);
-                if (params?.cryptoPair)
-                    queryParams.append('cryptoPair', params.cryptoPair);
+                    if (cancelled) return;
 
-                const url = `${API_ENDPOINTS.chartData}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-                const response = await fetch(url);
+                    if (resp.status === 200) {
+                        const chartData: ChartDataPoint[] = await resp.json();
+                        if (!cancelled) {
+                            setData(chartData);
+                            setError(null);
+                            setStatus('ready');
+                        }
+                        return;
+                    }
 
-                if (!response.ok) {
-                    throw new Error(
-                        `Failed to fetch chart data: ${response.statusText}`
-                    );
+                    if (resp.status === 202) {
+                        // Accepted: server is processing. Poll again after delay.
+                        setStatus('processing');
+                        // Optionally read body for progress message
+                        try {
+                            const body = await resp.json().catch(() => null);
+                            if (body && body.message) {
+                                setStatus(String(body.message));
+                            }
+                        } catch {}
+
+                        // Wait and retry (exponential backoff)
+                        await sleep(delay);
+                        delay = Math.min(maxDelay, Math.floor(delay * multiplier));
+                        continue;
+                    }
+
+                    // Other errors
+                    const text = await resp.text().catch(() => resp.statusText || '');
+                    throw new Error(`Fetch failed (${resp.status}): ${text}`);
                 }
 
-                const chartData: ChartDataPoint[] = await response.json();
-                setData(chartData);
-                setError(null);
+                if (!cancelled) {
+                    throw new Error('Timeout while waiting for chart data');
+                }
             } catch (err) {
-                setError(
-                    err instanceof Error ? err : new Error('Unknown error')
-                );
-                // Fallback: gracefully handle error without mock data
-                setData([]);
+                if (!cancelled) {
+                    setError(err instanceof Error ? err : new Error('Unknown error'));
+                    setData([]);
+                    setStatus('error');
+                }
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
 
-        fetchData();
+        fetchWithPolling();
+
+        return () => {
+            cancelled = true;
+        };
     }, [params?.startDateTime, params?.endDateTime, params?.cryptoPair]);
 
     return { data, loading, error };
