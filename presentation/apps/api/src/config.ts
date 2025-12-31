@@ -7,20 +7,18 @@
  */
 
 export interface ApiConfig {
-    useActualServer: boolean;
     remoteServers: {
-        server1: string;
-        server2: string;
+        server: string;
     };
 }
 
 export const config: ApiConfig = {
-    // Set to true to relay requests to actual remote servers
-    useActualServer: false,
-
     // Remote server addresses (configure these when ready to use actual servers)
     remoteServers: {
-        server1: 'http://kr2.chencraft.com:9452',
-        server2: '',
+        // Use localhost in development, remote server in production
+        server:
+            process.env.NODE_ENV === 'production'
+                ? 'http://kr2.chencraft.com:9452'
+                : 'http://localhost:9452'
     },
 };

@@ -80,78 +80,16 @@ interface ChatRequest {
     history: ChatMessage[];
 }
 
-// Mock data generators
-function generateMockChartData(params?: ChartDataParams): ChartDataPoint[] {
-    const openingPrice = 45000;
-    const data: ChartDataPoint[] = [];
-
-    // Parse start and end times
-    let startTime: Date;
-    let endTime: Date;
-
-    if (params?.startDateTime && params?.endDateTime) {
-        startTime = new Date(params.startDateTime);
-        endTime = new Date(params.endDateTime);
-    } else {
-        // Default: last 24 hours
-        endTime = new Date();
-        startTime = new Date(endTime.getTime() - 24 * 60 * 60 * 1000);
-    }
-
-    // Calculate time range and number of data points
-    const timeRangeMs = endTime.getTime() - startTime.getTime();
-    const dataPoints = 24; // Fixed to 24 data points
-    const intervalMs = timeRangeMs / (dataPoints - 1);
-
-    for (let i = 0; i < dataPoints; i++) {
-        const currentTime = new Date(startTime.getTime() + i * intervalMs);
-
-        // Always use ISO-8601 format for time
-        const timeLabel = currentTime.toISOString();
-
-        const priceChange = Math.sin(i / 4) * 2000 + Math.random() * 1000 - 500;
-        const holdValue = openingPrice + priceChange;
-
-        const strategyOffset =
-            Math.cos(i / 5) * 1500 + Math.random() * 500 - 250;
-        const strategyValue = openingPrice + priceChange + strategyOffset;
-
-        // Generate sample trading events at random intervals
-        const events: TradingEvent[] | undefined =
-            i % 6 === 0 && i > 0
-                ? [
-                      {
-                          timestamp: currentTime.toISOString(),
-                          action: strategyValue > holdValue ? 'BUY' : 'SELL',
-                          trigger:
-                              strategyValue > holdValue
-                                  ? 'Price momentum above MA(20)'
-                                  : 'RSI oversold signal',
-                      },
-                  ]
-                : undefined;
-
-        data.push({
-            time: timeLabel,
-            holdValue: Math.round(holdValue),
-            strategyValue: Math.round(strategyValue),
-            events,
-        });
-    }
-
-    return data;
-}
-
 const app = express();
 
 // Middleware
 app.use(
     cors({
         origin: [
-                'http://localhost:5628', // Dev server
-                'http://localhost:6234',
-                'http://localhost:3024', // microfrontends proxy
-                'https://sc6117.chencraft.com',
+            'http://localhost:5628', // Dev server
+            'http://localhost:6234',
+            'http://localhost:3024', // microfrontends proxy
+            'https://sc6117.chencraft.com',
         ],
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -181,32 +119,21 @@ app.get('/health', (req, res) => {
 // Chart data endpoint
 app.get('/api/chart-data', async (req, res) => {
     try {
-        if (apiConfig.useActualServer) {
-            // Relay request to remote server
-            const queryString = new URLSearchParams(
-                req.query as any
-            ).toString();
-            const path = `/api/chart-data${queryString ? '?' + queryString : ''}`;
-            const data = await relayRequest(
-                apiConfig.remoteServers.server1,
-                path
-            );
-            // If the remote server returns an envelope with `records`,
-            // unwrap it to match the dashboard's expected array shape.
-            if (data && typeof data === 'object' && Array.isArray((data as any).records)) {
-                return res.status(200).json((data as any).records);
-            }
-            res.status(200).json(data);
-        } else {
-            // Use mock data
-            const params: ChartDataParams = {
-                startDateTime: req.query.startDateTime as string,
-                endDateTime: req.query.endDateTime as string,
-                cryptoPair: req.query.cryptoPair as string,
-            };
-            const data = generateMockChartData(params);
-            res.status(200).json(data);
+        // Relay request to remote server
+        const queryString = new URLSearchParams(
+            req.query as any
+        ).toString();
+        const path = `/api/chart-data${queryString ? '?' + queryString : ''}`;
+        const data = await relayRequest(
+            apiConfig.remoteServers.server,
+            path
+        );
+        // If the remote server returns an envelope with `records`,
+        // unwrap it to match the dashboard's expected array shape.
+        if (data && typeof data === 'object' && Array.isArray((data as any).records)) {
+            return res.status(200).json((data as any).records);
         }
+        res.status(200).json(data);
     } catch (error) {
         console.error('Chart data error:', error);
         res.status(500).json({ error: 'Failed to fetch chart data' });
@@ -219,7 +146,7 @@ app.get('/api/news', async (req, res) => {
         // Relay request to remote server
         const queryString = new URLSearchParams(req.query as any).toString();
         const path = `/api/news${queryString ? '?' + queryString : ''}`;
-        const data = await relayRequest(apiConfig.remoteServers.server1, path);
+        const data = await relayRequest(apiConfig.remoteServers.server, path);
         res.status(200).json(data);
     } catch (error) {
         console.error('News error:', error);
@@ -252,7 +179,7 @@ app.post('/api/chatbot', async (req, res) => {
 
         // Relay request to remote server
         const data = await relayRequest(
-            apiConfig.remoteServers.server1,
+            apiConfig.remoteServers.server,
             '/api/chatbot',
             'POST',
             req.body
