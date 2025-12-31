@@ -87,6 +87,38 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
         setEndInput(toLocalInputValue(new Date(endInstant)));
     }, []);
 
+    // Auto-trigger fetch whenever input values change
+    useEffect(() => {
+        // Skip if inputs are not yet initialized
+        if (!startInput || !endInput || !cryptoInput) return;
+
+        try {
+            const startIso = new Date(startInput);
+            const endIso = new Date(endInput);
+
+            // Validate dates
+            if (isNaN(startIso.getTime()) || isNaN(endIso.getTime())) return;
+
+            // Ensure within allowed UTC bounds
+            const min = new Date('2025-07-01T00:00:00Z');
+            const max = new Date('2025-08-01T00:00:00Z');
+            if (startIso < min || endIso > max) return;
+
+            const params = {
+                startDateTime: startIso.toISOString(),
+                endDateTime: endIso.toISOString(),
+                cryptoPair: cryptoInput,
+            } as ChartDataParams;
+
+            // Avoid re-requesting identical params
+            if (JSON.stringify(params) === JSON.stringify(chartParams)) return;
+
+            setChartParams(params);
+        } catch (e) {
+            console.error('[RechartCard] Invalid date input', e);
+        }
+    }, [startInput, endInput, cryptoInput]);
+
     // Determine if time range is <= 24 hours for display formatting
     const isShortRange = useMemo(() => {
         const s = chartParams?.startDateTime;
@@ -191,55 +223,6 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                         onChange={(e) => setEndInput(e.target.value)}
                         className="px-3 py-2 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 text-sm"
                     />
-                </div>
-                <div className="flex items-end">
-                    <button
-                        onClick={() => {
-                            console.debug('[RechartCard] Enquiry clicked', {
-                                startInput,
-                                endInput,
-                                cryptoInput,
-                            });
-                            // Prevent duplicate or invalid requests
-                            try {
-                                const startIso = new Date(startInput);
-                                const endIso = new Date(endInput);
-                                if (
-                                    isNaN(startIso.getTime()) ||
-                                    isNaN(endIso.getTime())
-                                )
-                                    return;
-                                // Ensure within allowed UTC bounds
-                                const min = new Date('2025-07-01T00:00:00Z');
-                                const max = new Date('2025-08-01T00:00:00Z');
-                                if (startIso < min || endIso > max) return;
-
-                                const params = {
-                                    startDateTime: startIso.toISOString(),
-                                    endDateTime: endIso.toISOString(),
-                                    cryptoPair: cryptoInput,
-                                } as ChartDataParams;
-
-                                // Avoid re-requesting identical params
-                                if (
-                                    JSON.stringify(params) ===
-                                    JSON.stringify(chartParams)
-                                )
-                                    return;
-                                setChartParams(params);
-                            } catch (e) {
-                                console.error(
-                                    '[RechartCard] Invalid date input',
-                                    e
-                                );
-                                return;
-                            }
-                        }}
-                        disabled={loading}
-                        className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50"
-                    >
-                        Enquiry
-                    </button>
                 </div>
             </div>
             <div className="flex-1 w-full flex items-center justify-center">
