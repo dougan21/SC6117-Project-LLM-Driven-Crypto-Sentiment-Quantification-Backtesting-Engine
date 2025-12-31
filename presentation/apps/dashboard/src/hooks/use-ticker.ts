@@ -84,7 +84,6 @@ export function useTicker(options?: UseTickerOptions) {
                     setError(
                         err instanceof Error ? err : new Error('Unknown error')
                     );
-                    // Fallback: gracefully handle error without mock data
                     setData([]);
                 }
             } finally {

@@ -24,13 +24,13 @@ interface ChartDataParams {
 
 /**
  * Fetches chart data from remote source with optional parameters
- * Currently uses mock data, but structure supports real API integration
+ * Supports real API integration
  */
 export function useChartData(params?: ChartDataParams) {
     const [data, setData] = useState<ChartDataPoint[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
-    const [status, setStatus] = useState<string | null>(null);
+    const [_status, setStatus] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -39,7 +39,7 @@ export function useChartData(params?: ChartDataParams) {
 
         const fetchWithPolling = async () => {
             // If no params provided, do not fetch (caller must trigger by setting params)
-            if (!params || (Object.keys(params).length === 0)) {
+            if (!params || Object.keys(params).length === 0) {
                 setLoading(false);
                 setStatus(null);
                 return;
@@ -64,10 +64,14 @@ export function useChartData(params?: ChartDataParams) {
             const endIso = toIsoUtc(params?.endDateTime);
             if (startIso) queryParams.append('startDateTime', startIso);
             if (endIso) queryParams.append('endDateTime', endIso);
-            if (params?.cryptoPair) queryParams.append('cryptoPair', params.cryptoPair);
+            if (params?.cryptoPair)
+                queryParams.append('cryptoPair', params.cryptoPair);
 
             const url = `${API_ENDPOINTS.chartData}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-            console.debug('[useChartData] fetching', { url, params: { startIso, endIso, crypto: params?.cryptoPair } });
+            console.debug('[useChartData] fetching', {
+                url,
+                params: { startIso, endIso, crypto: params?.cryptoPair },
+            });
 
             const timeoutMs = 120_000; // total polling timeout
             const start = Date.now();
@@ -78,7 +82,10 @@ export function useChartData(params?: ChartDataParams) {
             try {
                 while (!cancelled && Date.now() - start < timeoutMs) {
                     const resp = await fetch(url, { method: 'GET' });
-                    console.debug('[useChartData] response status', resp.status);
+                    console.debug(
+                        '[useChartData] response status',
+                        resp.status
+                    );
 
                     if (cancelled) return;
 
@@ -101,16 +108,26 @@ export function useChartData(params?: ChartDataParams) {
                             if (body && body.message) {
                                 setStatus(String(body.message));
                             }
-                        } catch {}
+                        } catch (e) {
+                            console.error(
+                                '[useChartData] Error parsing progress message',
+                                e
+                            );
+                        }
 
                         // Wait and retry (exponential backoff)
                         await sleep(delay);
-                        delay = Math.min(maxDelay, Math.floor(delay * multiplier));
+                        delay = Math.min(
+                            maxDelay,
+                            Math.floor(delay * multiplier)
+                        );
                         continue;
                     }
 
                     // Other errors
-                    const text = await resp.text().catch(() => resp.statusText || '');
+                    const text = await resp
+                        .text()
+                        .catch(() => resp.statusText || '');
                     throw new Error(`Fetch failed (${resp.status}): ${text}`);
                 }
 
@@ -119,7 +136,9 @@ export function useChartData(params?: ChartDataParams) {
                 }
             } catch (err) {
                 if (!cancelled) {
-                    setError(err instanceof Error ? err : new Error('Unknown error'));
+                    setError(
+                        err instanceof Error ? err : new Error('Unknown error')
+                    );
                     setData([]);
                     setStatus('error');
                 }

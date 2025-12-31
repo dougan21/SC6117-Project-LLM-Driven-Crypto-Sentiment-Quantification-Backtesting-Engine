@@ -2,8 +2,7 @@
  * Centralized API Configuration
  *
  * This file contains configuration for data sources.
- * When useActualServer is true, requests will be relayed to remote servers.
- * Otherwise, mock data will be used.
+ * Requests will be relayed to remote servers.
  */
 
 export interface ApiConfig {
@@ -19,6 +18,6 @@ export const config: ApiConfig = {
         server:
             process.env.NODE_ENV === 'production'
                 ? 'http://kr2.chencraft.com:9452'
-                : 'http://localhost:9452'
+                : 'http://localhost:9452',
     },
 };

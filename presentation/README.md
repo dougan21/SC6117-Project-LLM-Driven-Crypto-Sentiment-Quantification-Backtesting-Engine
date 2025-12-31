@@ -29,10 +29,9 @@ A comprehensive dashboard for cryptocurrency analysis powered by LLM technology,
 
 ### RESTful API
 
-- **Mock Data Mode** - Development-friendly simulated data for rapid prototyping
 - **Relay Mode** - Production-ready request forwarding to actual data sources
 - **OpenAPI/Swagger Documentation** - Interactive API documentation at `/api-docs`
-- **Flexible Configuration** - Centralized config for switching between mock and real data
+- **Flexible Configuration** - Centralized config for proxy requests
 - **Error Handling** - Comprehensive error responses and logging
 
 ## Tech Stack
@@ -159,7 +158,6 @@ pm2 delete all    # Remove all processes
     - `GET /api/ticker` - Real-time ticker data for 7 cryptocurrencies
     - `POST /api/chatbot` - AI chatbot message processing
 - **Features:**
-    - Mock data mode for development
     - Relay mode for production (configurable in `config.ts`)
     - OpenAPI/Swagger documentation
     - CORS enabled for dashboard origins
@@ -167,22 +165,13 @@ pm2 delete all    # Remove all processes
 
 ### API Configuration
 
-The API supports two operational modes controlled by `apps/api/src/config.ts`:
+The server configuration is controlled by `apps/api/src/config.ts`:
 
-1. **Mock Data Mode (Default)**
-
-    ```typescript
-    useActualServer: false; // Uses simulated data
-    ```
-
-2. **Relay Mode**
+1. **Relay Mode**
 
     ```typescript
-    useActualServer: true   // Relays to remote servers
     remoteServers: {
-        server1: 'https://api.example.com',  // Configure actual server
-        server2: '',  // Optional fallback
-        server3: '',  // Optional fallback
+        server: 'https://api.example.com',  // Configure actual server
     }
     ```
 
@@ -210,11 +199,6 @@ The API supports two operational modes controlled by `apps/api/src/config.ts`:
 - **Swagger UI Integration** - Interactive API documentation at `/api-docs`
 - **Centralized Configuration** - `config.ts` with `useActualServer` flag and remote server settings
 - **Relay Mode** - Ability to forward requests to actual data sources
-- **Mock Data Generators** - Realistic simulation for development
-    - Chart data with random walk algorithm
-    - News with sentiment analysis
-    - Ticker with continuous price updates
-    - Chatbot with pattern-matched responses
 
 #### Data Models
 
@@ -234,16 +218,6 @@ The API supports two operational modes controlled by `apps/api/src/config.ts`:
     trigger: string;           // Technical indicator reason
 }
 ```
-
-### API Development
-
-To switch between mock and real data:
-
-1. Edit `apps/api/src/config.ts`
-2. Set `useActualServer: true` for relay mode
-3. Configure `server1` with your actual API URL
-4. Rebuild: `pnpm run build:api`
-5. Restart: `pm2 restart api`
 
 ### Documentation
 

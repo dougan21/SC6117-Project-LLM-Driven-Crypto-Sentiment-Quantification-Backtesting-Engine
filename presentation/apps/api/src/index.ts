@@ -49,26 +49,6 @@ async function relayRequest(
     return response.json();
 }
 
-// Types
-interface TradingEvent {
-    timestamp: string;
-    action: string;
-    trigger: string;
-}
-
-interface ChartDataPoint {
-    time: string;
-    holdValue: number;
-    strategyValue: number;
-    events?: TradingEvent[];
-}
-
-interface ChartDataParams {
-    startDateTime?: string;
-    endDateTime?: string;
-    cryptoPair?: string;
-}
-
 interface ChatMessage {
     role: 'user' | 'assistant';
     content: string;
@@ -120,17 +100,16 @@ app.get('/health', (req, res) => {
 app.get('/api/chart-data', async (req, res) => {
     try {
         // Relay request to remote server
-        const queryString = new URLSearchParams(
-            req.query as any
-        ).toString();
+        const queryString = new URLSearchParams(req.query as any).toString();
         const path = `/api/chart-data${queryString ? '?' + queryString : ''}`;
-        const data = await relayRequest(
-            apiConfig.remoteServers.server,
-            path
-        );
+        const data = await relayRequest(apiConfig.remoteServers.server, path);
         // If the remote server returns an envelope with `records`,
         // unwrap it to match the dashboard's expected array shape.
-        if (data && typeof data === 'object' && Array.isArray((data as any).records)) {
+        if (
+            data &&
+            typeof data === 'object' &&
+            Array.isArray((data as any).records)
+        ) {
             return res.status(200).json((data as any).records);
         }
         res.status(200).json(data);

@@ -194,7 +194,7 @@ paths:
             tags:
                 - Chatbot
             summary: Send message to chatbot
-            description: Sends a message to the chatbot and receives a response. Currently returns a mock response.
+            description: Sends a message to the chatbot and receives a response.
             operationId: sendChatMessage
             requestBody:
                 required: true
