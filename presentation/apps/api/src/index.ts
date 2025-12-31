@@ -148,9 +148,10 @@ const app = express();
 app.use(
     cors({
         origin: [
-            'http://localhost:5628', // Dev server
-            'http://localhost:6234',
-            'https://sc6117.chencraft.com',
+                'http://localhost:5628', // Dev server
+                'http://localhost:6234',
+                'http://localhost:3024', // microfrontends proxy
+                'https://sc6117.chencraft.com',
         ],
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -190,6 +191,11 @@ app.get('/api/chart-data', async (req, res) => {
                 apiConfig.remoteServers.server1,
                 path
             );
+            // If the remote server returns an envelope with `records`,
+            // unwrap it to match the dashboard's expected array shape.
+            if (data && typeof data === 'object' && Array.isArray((data as any).records)) {
+                return res.status(200).json((data as any).records);
+            }
             res.status(200).json(data);
         } else {
             // Use mock data

@@ -4,6 +4,7 @@ import os
 import hashlib
 from dotenv import load_dotenv
 from typing import Dict, Optional
+import threading
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -51,6 +52,8 @@ class CryptoSentimentRunner:
 
         # 2. Load local cache (result cache)
         self.cache = self._load_cache()
+        # Lock to protect cache from concurrent modification (json.dump iterates dict)
+        self.cache_lock = threading.RLock()
 
         # 3. Initialize LangChain components
         self.parser = PydanticOutputParser(pydantic_object=SentimentResult)
@@ -113,8 +116,11 @@ class CryptoSentimentRunner:
         return {}
 
     def _save_cache(self):
+        # Dump a shallow copy while holding the lock to avoid "dictionary changed size during iteration"
+        with self.cache_lock:
+            cache_copy = dict(self.cache)
         with open(self.cache_file, 'w', encoding='utf-8') as f:
-            json.dump(self.cache, f, ensure_ascii=False, indent=2)
+            json.dump(cache_copy, f, ensure_ascii=False, indent=2)
 
     def _get_hash(self, text: str) -> str:
         """
@@ -132,17 +138,19 @@ class CryptoSentimentRunner:
         item_hash = self._get_hash(headline)
 
         # 2. Check cache
-        if item_hash in self.cache:
-            # print(f"Cache Hit: {headline[:15]}...")
-            return self.cache[item_hash]
+        with self.cache_lock:
+            cached = self.cache.get(item_hash)
+        if cached is not None:
+            return cached
 
         # 3. No cache, call API
         try:
             res = self.chain.invoke({"headline": headline})
             output = {"score": res.score, "reason": res.reasoning}
 
-            # Write to cache
-            self.cache[item_hash] = output
+            # Write to cache under lock
+            with self.cache_lock:
+                self.cache[item_hash] = output
             return output
 
         except Exception as e:

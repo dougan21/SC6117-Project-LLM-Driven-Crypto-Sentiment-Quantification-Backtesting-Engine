@@ -45,22 +45,54 @@ function formatTimeLabel(isoString: string, isShortRange: boolean): string {
 }
 
 export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
-    // TODO: Set proper default value here
-    const [chartParams, setChartParams] = useState<ChartDataParams>({
-        startDateTime: '2025-01-01T00:00',
-        endDateTime: new Date().toISOString().slice(0, 16),
-        cryptoPair: 'BTC/USD',
-    });
+    // Form state (user-editable). chartParams controls when we actually fetch.
+    const [startInput, setStartInput] = useState<string>('2025-07-01T00:00');
+    const [endInput, setEndInput] = useState<string>('2025-08-01T00:00');
+    const [cryptoInput, setCryptoInput] = useState<string>('BTC/USD');
 
-    const { data: chartData, loading, error } = useChartData(chartParams);
+    // Actual params passed to hook; undefined => no auto-fetch
+    const [chartParams, setChartParams] = useState<ChartDataParams | undefined>(undefined);
+    const { data: chartData, loading, error } = useChartData(chartParams as any);
+
+    // Compute local min/max strings derived from UTC boundaries
+    const utcMin = new Date('2025-07-01T00:00:00Z');
+    const utcMax = new Date('2025-08-01T00:00:00Z');
+
+    const toLocalInputValue = (d: Date) => {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const year = d.getFullYear();
+        const month = pad(d.getMonth() + 1);
+        const day = pad(d.getDate());
+        const hours = pad(d.getHours());
+        const minutes = pad(d.getMinutes());
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
+    const localMin = toLocalInputValue(new Date(utcMin));
+    const localMax = toLocalInputValue(new Date(utcMax));
+
+    // Initialize time inputs to a system-time based window on mount (clamped to UTC allowed range)
+    useEffect(() => {
+        const now = new Date();
+        // clamp end instant to UTC max
+        const endInstant = now > utcMax ? utcMax : now;
+        // default window: 1 hour
+        let startInstant = new Date(endInstant.getTime() - 60 * 60 * 1000);
+        if (startInstant < utcMin) startInstant = utcMin;
+
+        setStartInput(toLocalInputValue(new Date(startInstant)));
+        setEndInput(toLocalInputValue(new Date(endInstant)));
+    }, []);
 
     // Determine if time range is <= 24 hours for display formatting
     const isShortRange = useMemo(() => {
-        if (!chartParams.startDateTime || !chartParams.endDateTime) return true;
-        const start = new Date(chartParams.startDateTime).getTime();
-        const end = new Date(chartParams.endDateTime).getTime();
+        const s = chartParams?.startDateTime;
+        const e = chartParams?.endDateTime;
+        if (!s || !e) return true;
+        const start = new Date(s).getTime();
+        const end = new Date(e).getTime();
         return end - start <= 24 * 60 * 60 * 1000;
-    }, [chartParams.startDateTime, chartParams.endDateTime]);
+    }, [chartParams?.startDateTime, chartParams?.endDateTime]);
 
     // Format chart data with display-friendly time labels and numeric timestamps
     const formattedChartData = useMemo(() => {
@@ -72,10 +104,10 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
     }, [chartData, isShortRange]);
 
     useEffect(() => {
-        if (onCryptoPairChange && chartParams.cryptoPair) {
-            onCryptoPairChange(chartParams.cryptoPair);
+        if (onCryptoPairChange && chartParams?.cryptoPair) {
+            onCryptoPairChange(chartParams.cryptoPair as string);
         }
-    }, [chartParams.cryptoPair, onCryptoPairChange]);
+    }, [chartParams?.cryptoPair, onCryptoPairChange]);
 
     const CustomTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
@@ -121,13 +153,8 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                         Cryptocurrency
                     </label>
                     <select
-                        value={chartParams.cryptoPair || 'BTC/USD'}
-                        onChange={(e) =>
-                            setChartParams({
-                                ...chartParams,
-                                cryptoPair: e.target.value,
-                            })
-                        }
+                        value={cryptoInput}
+                        onChange={(e) => setCryptoInput(e.target.value)}
                         className="px-3 py-2 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 text-sm"
                     >
                         <option value="BTC/USD">Bitcoin (BTC/USD)</option>
@@ -141,13 +168,10 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                     </label>
                     <input
                         type="datetime-local"
-                        value={chartParams.startDateTime || ''}
-                        onChange={(e) =>
-                            setChartParams({
-                                ...chartParams,
-                                startDateTime: e.target.value || undefined,
-                            })
-                        }
+                        value={startInput}
+                        min="2025-07-01T00:00"
+                        max="2025-08-01T00:00"
+                        onChange={(e) => setStartInput(e.target.value)}
                         className="px-3 py-2 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 text-sm"
                     />
                 </div>
@@ -158,15 +182,45 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                     </label>
                     <input
                         type="datetime-local"
-                        value={chartParams.endDateTime || ''}
-                        onChange={(e) =>
-                            setChartParams({
-                                ...chartParams,
-                                endDateTime: e.target.value || undefined,
-                            })
-                        }
+                        value={endInput}
+                        min="2025-07-01T00:00"
+                        max="2025-08-01T00:00"
+                        onChange={(e) => setEndInput(e.target.value)}
                         className="px-3 py-2 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 text-sm"
                     />
+                </div>
+                <div className="flex items-end">
+                    <button
+                        onClick={() => {
+                            console.debug('[RechartCard] Enquiry clicked', { startInput, endInput, cryptoInput });
+                            // Prevent duplicate or invalid requests
+                            try {
+                                const startIso = new Date(startInput);
+                                const endIso = new Date(endInput);
+                                if (isNaN(startIso.getTime()) || isNaN(endIso.getTime())) return;
+                                // Ensure within allowed UTC bounds
+                                const min = new Date('2025-07-01T00:00:00Z');
+                                const max = new Date('2025-08-01T00:00:00Z');
+                                if (startIso < min || endIso > max) return;
+
+                                const params = {
+                                    startDateTime: startIso.toISOString(),
+                                    endDateTime: endIso.toISOString(),
+                                    cryptoPair: cryptoInput,
+                                } as ChartDataParams;
+
+                                // Avoid re-requesting identical params
+                                if (JSON.stringify(params) === JSON.stringify(chartParams)) return;
+                                setChartParams(params);
+                            } catch (e) {
+                                // swallow invalid date errors
+                            }
+                        }}
+                        disabled={loading}
+                        className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50"
+                    >
+                        Enquiry
+                    </button>
                 </div>
             </div>
             <div className="flex-1 w-full flex items-center justify-center">
