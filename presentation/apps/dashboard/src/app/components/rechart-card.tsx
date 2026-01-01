@@ -74,17 +74,11 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
         return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
 
-    // Initialize time inputs to a system-time based window on mount (clamped to UTC allowed range)
+    // Initialize time inputs to full month range on mount
     useEffect(() => {
-        const now = new Date();
-        // clamp end instant to UTC max
-        const endInstant = now > utcMax ? utcMax : now;
-        // default window: 1 hour
-        let startInstant = new Date(endInstant.getTime() - 60 * 60 * 1000);
-        if (startInstant < utcMin) startInstant = utcMin;
-
-        setStartInput(toLocalInputValue(new Date(startInstant)));
-        setEndInput(toLocalInputValue(new Date(endInstant)));
+        // Default to full month: 2025-07-01 to 2025-08-01
+        setStartInput(toLocalInputValue(utcMin));
+        setEndInput(toLocalInputValue(utcMax));
     }, []);
 
     // Auto-trigger fetch whenever input values change
@@ -98,11 +92,6 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
 
             // Validate dates
             if (isNaN(startIso.getTime()) || isNaN(endIso.getTime())) return;
-
-            // Ensure within allowed UTC bounds
-            const min = new Date('2025-07-01T00:00:00Z');
-            const max = new Date('2025-08-01T00:00:00Z');
-            if (startIso < min || endIso > max) return;
 
             const params = {
                 startDateTime: startIso.toISOString(),
@@ -204,8 +193,7 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                     <input
                         type="datetime-local"
                         value={startInput}
-                        min="2025-07-01T00:00"
-                        max="2025-08-01T00:00"
+                        max={toLocalInputValue(new Date())}
                         onChange={(e) => setStartInput(e.target.value)}
                         className="px-3 py-2 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 text-sm"
                     />
@@ -218,8 +206,7 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                     <input
                         type="datetime-local"
                         value={endInput}
-                        min="2025-07-01T00:00"
-                        max="2025-08-01T00:00"
+                        max={toLocalInputValue(new Date())}
                         onChange={(e) => setEndInput(e.target.value)}
                         className="px-3 py-2 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 text-sm"
                     />
@@ -262,7 +249,7 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                                 scale="time"
                             />
                             <YAxis
-                                domain={[10000, 'auto']}
+                                domain={['auto', 'auto']}
                                 label={{
                                     value: 'Price (USD)',
                                     angle: -90,
