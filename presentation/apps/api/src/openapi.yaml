@@ -1,0 +1,450 @@
+openapi: 3.1.0
+info:
+    title: SC6117 Crypto Dashboard API
+    description: API endpoints for the SC6117 Crypto Dashboard application with real-time cryptocurrency data, predictions, news, and chatbot functionality.
+    version: 1.0.0
+
+tags:
+    - name: Health
+      description: Health check endpoints
+    - name: Chart Data
+      description: Cryptocurrency price and prediction data
+    - name: News
+      description: Cryptocurrency news with sentiment analysis
+    - name: Ticker
+      description: Real-time cryptocurrency ticker data
+    - name: Chatbot
+      description: AI chatbot for cryptocurrency queries
+
+paths:
+    /health:
+        get:
+            tags:
+                - Health
+            summary: Health check
+            description: Verify the API server is running
+            operationId: healthCheck
+            responses:
+                '200':
+                    description: Server is healthy
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    status:
+                                        type: string
+                                        examples:
+                                            - ok
+                                    timestamp:
+                                        type: string
+                                        format: date-time
+                                        examples:
+                                            - '2025-12-04T12:00:00.000Z'
+                            examples:
+                                success:
+                                    value:
+                                        status: ok
+                                        timestamp: '2025-12-04T12:00:00.000Z'
+
+    /api/chart-data:
+        get:
+            tags:
+                - Chart Data
+            summary: Get cryptocurrency chart data
+            description: Returns cryptocurrency price data comparing buy-and-hold value vs active trading strategy value based on query parameters. Always returns 24 data points evenly distributed across the time range. Some data points may include trading events showing buy/sell actions and their triggers.
+            operationId: getChartData
+            parameters:
+                - name: startDateTime
+                  in: query
+                  required: true
+                  description: Start date and time in ISO 8601 format (YYYY-MM-DDTHH:mm)
+                  schema:
+                      type: string
+                      format: date-time
+                  examples:
+                      default:
+                          value: '2025-12-03T00:00'
+                - name: endDateTime
+                  in: query
+                  required: true
+                  description: End date and time in ISO 8601 format (YYYY-MM-DDTHH:mm)
+                  schema:
+                      type: string
+                      format: date-time
+                  examples:
+                      default:
+                          value: '2025-12-04T00:00'
+                - name: cryptoPair
+                  in: query
+                  required: true
+                  description: Cryptocurrency trading pair
+                  schema:
+                      type: string
+                      enum:
+                          - BTC/USD
+                          - ETH/USD
+                  examples:
+                      btc:
+                          value: BTC/USD
+            responses:
+                '200':
+                    description: Successful response with chart data
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/ChartDataPoint'
+                            examples:
+                                sample:
+                                    value:
+                                        - time: '2025-12-04T00:00:00.000Z'
+                                          holdValue: 45000
+                                          strategyValue: 45523
+                                        - time: '2025-12-04T01:02:00.000Z'
+                                          holdValue: 46245
+                                          strategyValue: 45812
+                                          events:
+                                              - timestamp: '2025-12-04T01:02:00.000Z'
+                                                action: SELL
+                                                trigger: RSI oversold signal
+                                        - time: '2025-12-04T02:05:00.000Z'
+                                          holdValue: 45678
+                                          strategyValue: 46234
+
+    /api/news:
+        get:
+            tags:
+                - News
+            summary: Get cryptocurrency news
+            description: Returns a list of cryptocurrency news articles with sentiment analysis, sorted chronologically with newest first.
+            operationId: getNews
+            parameters:
+                - name: limit
+                  in: query
+                  required: true
+                  description: Maximum number of news items to return
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                  examples:
+                      default:
+                          value: 10
+            responses:
+                '200':
+                    description: Successful response with news items
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/NewsItem'
+                            examples:
+                                sample:
+                                    value:
+                                        - id: news-1-1234567890
+                                          title: Bitcoin Reaches New All-Time High
+                                          abstract: Lorem ipsum dolor sit amet, consectetur adipiscing elit...
+                                          timestamp: '2025-12-04T10:30:00.000Z'
+                                          sentiment: positive
+                                        - id: news-2-1234567891
+                                          title: Regulatory Clarity Expected in Q1 2025
+                                          abstract: Duis aute irure dolor in reprehenderit...
+                                          timestamp: '2025-12-04T09:15:00.000Z'
+                                          sentiment: neutral
+
+    /api/ticker:
+        get:
+            tags:
+                - Ticker
+            summary: Get real-time ticker data
+            description: Returns real-time cryptocurrency ticker data for all supported symbols (BTC, ETH, BNB, SOL, XRP, ADA, DOGE).
+            operationId: getTicker
+            responses:
+                '200':
+                    description: Successful response with ticker data
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/TickerItem'
+                            examples:
+                                sample:
+                                    value:
+                                        - symbol: BTC
+                                          pair: USD
+                                          price: 42150.75
+                                          change: 2.34
+                                          volume24h: 28500000000
+                                          high24h: 42800.0
+                                          low24h: 41200.0
+                                        - symbol: ETH
+                                          pair: USD
+                                          price: 2245.5
+                                          change: -0.82
+                                          volume24h: 15200000000
+                                          high24h: 2280.0
+                                          low24h: 2210.0
+
+    /api/chatbot:
+        post:
+            tags:
+                - Chatbot
+            summary: Send message to chatbot
+            description: Sends a message to the chatbot and receives a response.
+            operationId: sendChatMessage
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ChatRequest'
+                        examples:
+                            sample:
+                                value:
+                                    message: What's the current Bitcoin trend?
+                                    history:
+                                        - role: assistant
+                                          content: Hello! How can I help you?
+                                          timestamp: '2025-12-04T10:00:00.000Z'
+            responses:
+                '200':
+                    description: Successful response with chatbot message
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ChatResponse'
+                            examples:
+                                sample:
+                                    value:
+                                        message: 'You said: "What''s the current Bitcoin trend?". This is a mock response. The chatbot feature is under development.'
+                                        timestamp: '2025-12-04T10:00:05.000Z'
+                '400':
+                    description: Bad request - missing required fields
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                            examples:
+                                missingMessage:
+                                    value:
+                                        error: Message is required
+
+components:
+    schemas:
+        TradingEvent:
+            type: object
+            required:
+                - timestamp
+                - action
+                - trigger
+            properties:
+                timestamp:
+                    type: string
+                    format: date-time
+                    description: ISO 8601 timestamp when the trading action occurred
+                    examples:
+                        - '2025-12-04T01:02:00.000Z'
+                action:
+                    type: string
+                    description: Trading action taken (e.g., BUY, SELL)
+                    examples:
+                        - BUY
+                        - SELL
+                trigger:
+                    type: string
+                    description: Reason/signal that triggered this action (e.g., technical indicator)
+                    examples:
+                        - Price momentum above MA(20)
+                        - RSI oversold signal
+
+        ChartDataPoint:
+            type: object
+            required:
+                - time
+                - holdValue
+                - strategyValue
+            properties:
+                time:
+                    type: string
+                    format: date-time
+                    description: ISO-8601 formatted timestamp for this data point
+                    examples:
+                        - '2025-12-04T10:00:00.000Z'
+                holdValue:
+                    type: number
+                    description: Portfolio value if bought at start and held (buy-and-hold strategy) in USD (integer)
+                    examples:
+                        - 45234
+                strategyValue:
+                    type: number
+                    description: Portfolio value from active trading strategy (with buy/sell decisions) in USD (integer)
+                    examples:
+                        - 45612
+                events:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TradingEvent'
+                    description: Optional array of trading events that occurred at this time point
+
+        NewsItem:
+            type: object
+            required:
+                - id
+                - title
+                - abstract
+                - timestamp
+                - sentiment
+            properties:
+                id:
+                    type: string
+                    description: Unique identifier for the news item
+                    examples:
+                        - news-1-1234567890
+                title:
+                    type: string
+                    description: News article headline
+                    examples:
+                        - Bitcoin Reaches New All-Time High
+                abstract:
+                    type: string
+                    description: Brief summary or excerpt from the article
+                    examples:
+                        - Lorem ipsum dolor sit amet, consectetur adipiscing elit...
+                timestamp:
+                    type: string
+                    format: date-time
+                    description: Publication time in ISO 8601 format
+                    examples:
+                        - '2025-12-04T10:30:00.000Z'
+                sentiment:
+                    type: string
+                    enum:
+                        - positive
+                        - negative
+                        - neutral
+                    description: AI-analyzed sentiment of the article's impact on crypto market
+                    examples:
+                        - positive
+
+        TickerItem:
+            type: object
+            required:
+                - symbol
+                - pair
+                - price
+                - change
+                - volume24h
+                - high24h
+                - low24h
+            properties:
+                symbol:
+                    type: string
+                    description: Cryptocurrency symbol
+                    examples:
+                        - BTC
+                pair:
+                    type: string
+                    description: Trading pair (always USD)
+                    examples:
+                        - USD
+                price:
+                    type: number
+                    description: Current price in USD
+                    examples:
+                        - 42150.75
+                change:
+                    type: number
+                    description: 24-hour percentage change
+                    examples:
+                        - 2.34
+                volume24h:
+                    type: number
+                    description: 24-hour trading volume in USD
+                    examples:
+                        - 28500000000
+                high24h:
+                    type: number
+                    description: Highest price in the last 24 hours
+                    examples:
+                        - 42800.0
+                low24h:
+                    type: number
+                    description: Lowest price in the last 24 hours
+                    examples:
+                        - 41200.0
+
+        ChatMessage:
+            type: object
+            required:
+                - role
+                - content
+                - timestamp
+            properties:
+                role:
+                    type: string
+                    enum:
+                        - user
+                        - assistant
+                    description: Who sent the message
+                    examples:
+                        - assistant
+                content:
+                    type: string
+                    description: Message content
+                    examples:
+                        - Hello! How can I help you?
+                timestamp:
+                    type: string
+                    format: date-time
+                    description: Message timestamp in ISO 8601 format
+                    examples:
+                        - '2025-12-04T10:00:00.000Z'
+
+        ChatRequest:
+            type: object
+            required:
+                - message
+            properties:
+                message:
+                    type: string
+                    description: User's message to the chatbot
+                    examples:
+                        - What's the current Bitcoin trend?
+                history:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChatMessage'
+                    description: Previous conversation history for context
+
+        ChatResponse:
+            type: object
+            required:
+                - message
+                - timestamp
+            properties:
+                message:
+                    type: string
+                    description: Chatbot's response message
+                    examples:
+                        - 'You said: "What''s the current Bitcoin trend?". This is a mock response.'
+                timestamp:
+                    type: string
+                    format: date-time
+                    description: Response timestamp in ISO 8601 format
+                    examples:
+                        - '2025-12-04T10:00:05.000Z'
+
+        Error:
+            type: object
+            required:
+                - error
+            properties:
+                error:
+                    type: string
+                    description: Error message description
+                    examples:
+                        - Message is required

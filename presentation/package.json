@@ -1,0 +1,49 @@
+{
+    "name": "presentation",
+    "version": "0.1.0",
+    "repository": "https://github.com/dougan21/SC6117-Project-LLM-Driven-Crypto-Sentiment-Quantification-Backtesting-Engine.git",
+    "private": true,
+    "scripts": {
+        "build": "turbo run build",
+        "build:dashboard": "turbo run build -F dashboard",
+        "build:api": "turbo run build -F api",
+        "dev": "turbo run dev",
+        "dev:dashboard": "turbo run dev -F dashboard",
+        "dev:api": "turbo run dev -F api",
+        "start:all": "turbo run start",
+        "start:dashboard": "turbo run start -F dashboard",
+        "start:api": "turbo run start -F api",
+        "typecheck": "turbo run typecheck",
+        "lint": "eslint",
+        "lint:fix": "eslint --fix",
+        "format": "prettier . --write --log-level silent && eslint --fix ."
+    },
+    "devDependencies": {
+        "@eslint/css": "^0.14.1",
+        "@eslint/js": "^9.39.1",
+        "@eslint/json": "^0.14.0",
+        "@eslint/markdown": "^7.5.1",
+        "@types/node": "20.11.30",
+        "eslint": "^9.39.1",
+        "eslint-config-next": "^16.0.5",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-next": "^0.0.0",
+        "eslint-plugin-prettier": "^5.5.4",
+        "eslint-plugin-react": "^7.37.5",
+        "globals": "^16.5.0",
+        "jiti": "^2.6.1",
+        "prettier": "^3.6.2",
+        "turbo": "^2.7.2",
+        "typescript": "^5.9.2",
+        "typescript-eslint": "^8.48.0"
+    },
+    "packageManager": "pnpm@10.25.0",
+    "engines": {
+        "node": "22.x",
+        "pnpm": "10.x"
+    },
+    "dependencies": {
+        "react": "^19.1.1",
+        "recharts": "^3.5.1"
+    }
+}

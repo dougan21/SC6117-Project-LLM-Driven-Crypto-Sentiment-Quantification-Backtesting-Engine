@@ -6,10 +6,11 @@ import asyncio
 from dotenv import load_dotenv
 from typing import Dict, Optional
 from tqdm import tqdm
+import threading
 
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-from langchain.output_parsers import PydanticOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
 # ==========================================
@@ -24,6 +25,8 @@ if not api_key:
 # ==========================================
 # 1. Pydantic Structure
 # ==========================================
+
+
 class SentimentResult(BaseModel):
     score: float = Field(description="Sentiment score between -1.0 and 1.0.")
     reasoning: str = Field(description="Brief reason, max 1 sentence.")
@@ -31,9 +34,11 @@ class SentimentResult(BaseModel):
 # ==========================================
 # 2. Strategy + Cache + Sentiment Engine
 # ==========================================
+
+
 class CryptoSentimentRunner:
-    def __init__(self, 
-                 strategy_name: Optional[str] = None, 
+    def __init__(self,
+                 strategy_name: Optional[str] = None,
                  config_file: str = "./config/scoring_strategies.json",
                  cache_file: str = "./data/sentiment_cache.json",
                  model: str = "gpt-4o-mini",
@@ -46,15 +51,18 @@ class CryptoSentimentRunner:
         
         # 1. Load strategy rules
         # self.current_strategy_name is used to generate cache Hash to distinguish different strategies
-        self.rules_text, self.current_strategy_name = self._load_strategy_rules(strategy_name)
-        
+        self.rules_text, self.current_strategy_name = self._load_strategy_rules(
+            strategy_name)
+
         # 2. Load local cache (result cache)
         self.cache = self._load_cache()
-        
+        # Lock to protect cache from concurrent modification (json.dump iterates dict)
+        self.cache_lock = threading.RLock()
+
         # 3. Initialize LangChain components
         self.parser = PydanticOutputParser(pydantic_object=SentimentResult)
         self.llm = ChatOpenAI(model=model, temperature=0, api_key=api_key)
-        
+
         template = """
         You are a crypto quantitative researcher. Analyze the immediate market sentiment.
         
@@ -67,13 +75,13 @@ class CryptoSentimentRunner:
 
         Headline: {headline}
         """
-        
+
         self.prompt = ChatPromptTemplate.from_template(template).partial(
             strategy_name=self.current_strategy_name,
             scoring_rules=self.rules_text,
             format_instructions=self.parser.get_format_instructions()
         )
-        
+
         self.chain = self.prompt | self.llm | self.parser
 
     # --- Strategy Loading Logic ---
@@ -89,15 +97,16 @@ class CryptoSentimentRunner:
         # Determine strategy name
         if not strategy_name:
             strategy_name = config.get("default_strategy", "standard_crypto")
-            
+
         print(f"Using Strategy: [{strategy_name}]")
-        
+
         rules = config["strategies"].get(strategy_name, [])
         if not rules:
             raise ValueError(f"Strategy '{strategy_name}' not found!")
 
         # Format rules text
-        formatted = "\n".join([f"- Score {r.get('score')}: {r.get('desc')}" for r in rules])
+        formatted = "\n".join(
+            [f"- Score {r.get('score')}: {r.get('desc')}" for r in rules])
         return formatted, strategy_name
 
     # --- Cache Management Logic ---
@@ -107,12 +116,15 @@ class CryptoSentimentRunner:
                 with open(self.cache_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
             except json.JSONDecodeError:
-                return {} # Reset if file is corrupted
+                return {}  # Reset if file is corrupted
         return {}
 
     def _save_cache(self):
+        # Dump a shallow copy while holding the lock to avoid "dictionary changed size during iteration"
+        with self.cache_lock:
+            cache_copy = dict(self.cache)
         with open(self.cache_file, 'w', encoding='utf-8') as f:
-            json.dump(self.cache, f, ensure_ascii=False, indent=2)
+            json.dump(cache_copy, f, ensure_ascii=False, indent=2)
 
     def _get_hash(self, text: str) -> str:
         """
@@ -130,19 +142,21 @@ class CryptoSentimentRunner:
         item_hash = self._get_hash(headline)
 
         # 2. Check cache
-        if item_hash in self.cache:
-            # print(f"Cache Hit: {headline[:15]}...")
-            return self.cache[item_hash]
+        with self.cache_lock:
+            cached = self.cache.get(item_hash)
+        if cached is not None:
+            return cached
 
         # 3. No cache, call API
         try:
             res = self.chain.invoke({"headline": headline})
             output = {"score": res.score, "reason": res.reasoning}
-            
-            # Write to cache
-            self.cache[item_hash] = output
+
+            # Write to cache under lock
+            with self.cache_lock:
+                self.cache[item_hash] = output
             return output
-            
+
         except Exception as e:
             print(f"Error: {headline[:15]}... | {e}")
             return {"score": 0.0, "reason": "Error"}
@@ -194,10 +208,12 @@ class CryptoSentimentRunner:
         return results
 
     def run_csv(self, input_csv, output_csv, text_col='title', date_col='date', limit=None):
-        print(f"Processing: {input_csv} | Strategy: {self.current_strategy_name}")
+        print(
+            f"Processing: {input_csv} | Strategy: {self.current_strategy_name}")
         df = pd.read_csv(input_csv)
-        if limit: df = df.head(limit)
-        
+        if limit:
+            df = df.head(limit)
+
         results = []
 
         # asyn or sync based on concurrency setting
@@ -274,7 +290,7 @@ class CryptoSentimentRunner:
 # ==========================================
 # if __name__ == "__main__":
 #     # Standard
-#     runner = CryptoSentimentRunner() 
+#     runner = CryptoSentimentRunner()
 #     runner.run_csv("news_data.csv", "results_standard.csv", limit=5)
 
 #     # non-standard strategy

@@ -1,11 +1,14 @@
 fastapi==0.125.0
 httpx==0.28.1
 langchain==1.1.0
+langchain_core==1.2.2
 langchain_openai==1.1.0
 numpy==2.3.5
 pandas==2.3.3
+pyarrow==18.1.0
 pydantic==2.12.5
 uvicorn==0.38.0
 tqdm==4.66.0
+python-dotenv==1.2.1
 # for testing use streamlit
 # streamlit==1.51.0

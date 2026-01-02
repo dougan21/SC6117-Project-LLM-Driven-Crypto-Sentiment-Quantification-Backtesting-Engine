@@ -2,14 +2,13 @@
 
 NTU SC6117 project: LLM-Driven Crypto Sentiment Quantification &amp; Backtesting Engine
 
+
 ## Sentiment Engine struct
 
 ```
 root/
 ├── .env                        # openAI API key
 ├── run_sentiment.py            # run sentiment engine -- get sentiment score
-├── api_server.py               # fastAPI of python-backend
-├── start_server.sh             # start server
 ├── config/   
 │   └── scoring_strategies.json # sentiment score strategies config
 ├── data/   
@@ -24,74 +23,13 @@ root/
 
 Actually, /data only contain the code for retrieving data; it's just used here to demonstrate the file structure.
 
-## how to use api_server.py
+## 2025-12-08 Updates (Regression-update branch)
 
-change ./.env to use real API keys
-
-#### Start the server directly through a Python file
-
-```python
-# default port number is 8000
-python api_server.py
-
-# change port number
-python api_server.py --port 6432
-
-# start reload (for develop)
-python api_server.py --port 6432 --reload
-```
-
-#### use shell
-
-```shell
-# default port number (8000)
-./start_server.sh
-
-# change port number 6432
-./start_server.sh -p 6432
-
-# change port number && Host
-./start_server.sh --port 9000 --host 127.0.0.1
-```
-
-
-#### use PM2
-
-if want to local test:
-
-do temp change:
-
-cherry-pick ：
-
-get the tmp code for testing
-
-```python
-# ./presentation/apps/dashboard/src/lib/api-config.ts
-# change API_BASE_URL to make sure that use local service
-export const API_BASE_URL = 'http://localhost:6432';
-
-```
-
-ecosystem.config.js add the python-backend
-
-```js
-{
-            name: "python-backend",
-            script: "api_server.py",
-            interpreter: "python3", 
-            args: "--port 8000",    // port number
-            cwd: "../",              // make sure this is the directory where api_server.py is located
-            autorestart: true,
-            watch: false,         
-        }
-```
-
-then
-
-```shell
-pnpm install
-
-pnpm run build
-
-pm2 start ecosystem.config.js
-```
+- Added a complete sentiment-driven backtest pipeline on top of the existing LLM sentiment engine.
+- Enhanced `lib/klineAcquision.py` to fetch standardized OHLCV data for the last N days (default: last 3 days of BTC/USDT at 5m resolution) and save it as a parquet file.
+- Implemented `lib/data_processor.py::SentimentAggregator.normalize_to_candles` to resample per-news sentiment scores into fixed timeframes (e.g. 5 minutes) with optional EWMA decay.
+- Added `lib/prepare_dataset.py` to merge price parquet (from `klineAcquision.py`) and LLM sentiment CSV (from `run_sentiment.py`) into a unified 5-minute dataset with a `sentiment_score` factor.
+- Created `lib/sentiment_strategy_backtest.py`, which defines a sentiment-based trading strategy (using sentiment mean threshold + sentiment change, with position sizing and simple drawdown-based risk control) and runs a backtest over the merged dataset, outputting an equity curve and summary statistics.
+- Created `lib/export_backtest_json.py` to convert backtest results into a frontend-friendly JSON format with 5-minute points, including `time`, `holdValue`, `strategyValue`, and optional trade `events`.
+- Updated `run_sentiment.py` and `lib/sentiment_engine.py` usage to clearly separate responsibilities: `run_sentiment.py` as the CLI entry point and `CryptoSentimentRunner` as the reusable LLM sentiment engine.
+- Ensured the data directory structure and scripts (`klineAcquision.py`, `run_sentiment.py`, `prepare_dataset.py`, `sentiment_strategy_backtest.py`, `export_backtest_json.py`) form a coherent end-to-end pipeline: raw news + market data → LLM sentiment scores → 5m sentiment factor → backtest → JSON for UI integration.
