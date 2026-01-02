@@ -8,6 +8,7 @@ pandas==2.3.3
 pyarrow==18.1.0
 pydantic==2.12.5
 uvicorn==0.38.0
+tqdm==4.66.0
 python-dotenv==1.2.1
 # for testing use streamlit
 # streamlit==1.51.0
