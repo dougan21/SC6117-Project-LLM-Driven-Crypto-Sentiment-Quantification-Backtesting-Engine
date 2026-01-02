@@ -2,7 +2,7 @@ import os
 import argparse
 from lib.sentiment_engine import CryptoSentimentRunner, load_dotenv
 
-# 确保加载环境变量
+# make sure to load environment variables from .env file
 load_dotenv()
 
 def run_sentiment_engine():
@@ -54,6 +54,12 @@ def run_sentiment_engine():
         default='DATETIME', 
         help="Column name for timestamps in the input CSV (default: DATETIME)"
     )
+    parser.add_argument(
+        '--concurrency', 
+        type=int, 
+        default=1, 
+        help="Concurrency level. Default is 1 (Serial). Set >1 for Async Parallel (e.g., 10)."
+    )
 
     args = parser.parse_args()
     
@@ -64,7 +70,11 @@ def run_sentiment_engine():
     print("*** LLM-Driven Crypto Sentiment Quantification Runner ***")
     
     try:
-        runner = CryptoSentimentRunner(strategy_name=args.strategy)
+        print(f"Initializing Runner with Strategy: {args.strategy}, Concurrency: {args.concurrency}")
+        runner = CryptoSentimentRunner(
+            strategy_name=args.strategy,
+            concurrency=args.concurrency
+        )
         
         # 3. Run task
         runner.run_csv(
