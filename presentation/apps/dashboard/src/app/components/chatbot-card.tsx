@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send } from 'lucide-react';
 import { useChatbot } from '@/hooks/use-chatbot';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export function ChatbotCard() {
     const { messages, loading, sendMessage } = useChatbot();
@@ -42,7 +44,7 @@ export function ChatbotCard() {
                     messages.map((m, idx) => (
                         <div
                             key={idx}
-                            className={`max-w-[80%] p-2 text-sm rounded-lg border whitespace-pre-wrap
+                            className={`max-w-[80%] p-2 text-sm rounded-lg border
                                 ${
                                     m.role === 'assistant'
                                         ? 'bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-800 dark:text-gray-100'
@@ -50,7 +52,40 @@ export function ChatbotCard() {
                                 }
                             `}
                         >
-                            {m.content}
+                            <div
+                                className="prose prose-sm dark:prose-invert max-w-none
+                                    prose-p:my-1 prose-p:leading-relaxed
+                                    prose-headings:my-2 prose-headings:font-semibold
+                                    prose-ul:my-1 prose-ol:my-1 prose-li:my-0
+                                    prose-code:text-xs prose-code:bg-gray-200 dark:prose-code:bg-slate-700 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                                    prose-pre:my-2 prose-pre:bg-gray-200 dark:prose-pre:bg-slate-700 prose-pre:p-2
+                                    prose-blockquote:my-2 prose-blockquote:border-l-4 prose-blockquote:border-gray-300 dark:prose-blockquote:border-slate-600 prose-blockquote:pl-3
+                                    prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
+                                    prose-strong:font-semibold prose-em:italic
+                                    prose-table:my-2 prose-th:border prose-td:border prose-th:p-1 prose-td:p-1"
+                            >
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        // Override code blocks to inherit message background
+                                        code: ({
+                                            _node,
+                                            inline,
+                                            ...props
+                                        }: any) =>
+                                            inline ? (
+                                                <code {...props} />
+                                            ) : (
+                                                <code
+                                                    className="block whitespace-pre-wrap"
+                                                    {...props}
+                                                />
+                                            ),
+                                    }}
+                                >
+                                    {m.content}
+                                </ReactMarkdown>
+                            </div>
                         </div>
                     ))}
                 <div ref={messagesEndRef} />
