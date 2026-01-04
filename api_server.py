@@ -4,7 +4,7 @@ import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Literal
 
 import httpx
 import uvicorn
@@ -12,6 +12,8 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+
+from langchain_core.messages import HumanMessage, AIMessage
 
 # try to import pipeline functions
 from lib.sentiment_engine import CryptoSentimentRunner, load_dotenv
@@ -73,10 +75,14 @@ class AnalysisResponse(BaseModel):
     reason: str
     strategy_used: str
 
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"] 
+    content: str
+    timestamp: Optional[str] = None
 
 class ChatbotRequest(BaseModel):
     message: str
-
+    history: List[ChatMessage] = []
 
 class ChatbotResponse(BaseModel):
     message: str
@@ -166,43 +172,28 @@ async def chatbot_endpoint(request: ChatbotRequest):
     chatbot interface for frontend integration
     """
     user_message = request.message
+    raw_history = request.history
+
     LOG(f"Received frontend message: {user_message}")
 
     try:
         #  call core analysis logic
         # 'standard_crypto' for default strategy
         runner = get_runner("standard_crypto")
-        result = runner.analyze_row(user_message)
 
-        score = result['score']
-        reason = result['reason']
+        # LangChain need not timestamp, only role + content
+        langchain_history = []
+        for msg in raw_history:
+            if msg.role == "user":
+                langchain_history.append(HumanMessage(content=msg.content))
+            elif msg.role == "assistant":
+                langchain_history.append(AIMessage(content=msg.content))
 
-        # map score to natural language trend
-        if score >= 0.6:
-            trend_str = "Strong Bullish"
-            advice = "market shows strong positive sentiment, consider buying opportunities."
-        elif score >= 0.2:
-            trend_str = "Bullish"
-            advice = "market shows positive sentiment, short-term price may rise."
-        elif score <= -0.6:
-            trend_str = "Strong Bearish"
-            advice = "market shows extreme fear, exercise caution."
-        elif score <= -0.2:
-            trend_str = "Bearish"
-            advice = "market shows negative sentiment, consider caution."
-        else:
-            trend_str = "Neutral / Market Noise"
-            advice = "market impact is limited, consider observing."
-
-        # reply construction
-        ai_reply = f"""
-{trend_str}
-
-AI sentiment analysis:
-{reason}
-
-Action advice: {advice}
-        """.strip()
+        #  runner analyze for chat history
+        ai_reply = runner.analyze_for_chat(
+            user_input=user_message, 
+            chat_history=langchain_history
+        )
 
     except Exception as e:
         LOG_ERR(f"Error: {e}")
