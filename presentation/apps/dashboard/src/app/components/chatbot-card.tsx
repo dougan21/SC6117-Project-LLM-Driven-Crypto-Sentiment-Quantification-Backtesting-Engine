@@ -69,7 +69,7 @@ export function ChatbotCard() {
                                     components={{
                                         // Override code blocks to inherit message background
                                         code: ({
-                                            node,
+                                            _node,
                                             inline,
                                             ...props
                                         }: any) =>
