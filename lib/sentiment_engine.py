@@ -4,13 +4,14 @@ import os
 import hashlib
 import asyncio
 from dotenv import load_dotenv
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from tqdm import tqdm
 import threading
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 # ==========================================
@@ -48,6 +49,7 @@ class CryptoSentimentRunner:
         self.config_file = config_file
         self.cache_file = cache_file
         self.concurrency = concurrency
+        self.model_name = model
         
         # 1. Load strategy rules
         # self.current_strategy_name is used to generate cache Hash to distinguish different strategies
@@ -62,6 +64,9 @@ class CryptoSentimentRunner:
         # 3. Initialize LangChain components
         self.parser = PydanticOutputParser(pydantic_object=SentimentResult)
         self.llm = ChatOpenAI(model=model, temperature=0, api_key=api_key)
+
+        # Initialize a slightly more creative LLM for Chat (temperature 0.3-0.7 is better for chat)
+        self.chat_llm = ChatOpenAI(model=model, temperature=0.3, api_key=api_key)
 
         template = """
         You are a crypto quantitative researcher. Analyze the immediate market sentiment.
@@ -134,6 +139,49 @@ class CryptoSentimentRunner:
         """
         raw_string = f"{text}|{self.current_strategy_name}"
         return hashlib.md5(raw_string.encode('utf-8')).hexdigest()
+    
+    # =========================================================================
+    # Chatbot Backend Logic
+    # =========================================================================
+    def analyze_for_chat(self, user_input: str, chat_history: List[BaseMessage] = []) -> str:
+        """
+        Enhanced Chat Analysis Function
+        Features:
+        1. Does not enforce JSON format, outputs natural language.
+        2. Equipped with common sense reasoning (enhanced through System Prompt).
+        3. Supports conversation history (Context).
+        """
+        
+        # define System Prompt
+        system_text = f"""
+        You are a senior Crypto Market Analyst.
+        Your task is to analyze user-provided news or statements and determine whether they are [Bullish] or [Bearish] for the cryptocurrency market, providing in-depth reasoning.
+        
+        Core Requirements:
+        1. **Apply Common Sense & Background Knowledge**: User input may be very brief (e.g., "Trump died"). You must identify entities (e.g., Trump = former U.S. President/candidate) and analyze their relationship with the crypto market based on their political stance.
+        2. **Analysis Dimensions**: Think from multiple perspectives including macroeconomics, regulatory policies, and market sentiment.
+        3. **Current Strategy Reference**: While you should analyze flexibly, please refer to the current quantitative strategy preferences:
+           {self.rules_text}
+        
+        Output Format Requirements:
+        - First, clearly state the conclusion: [Bullish], [Bearish], or [Neutral].
+        - Then explain the reasoning in simple and understandable language.
+        """
+
+        # Construct message list (Prompt Construction)
+        messages = [
+            SystemMessage(content=system_text),
+            *chat_history, # Unpack history
+            HumanMessage(content=user_input)
+        ]
+
+        # 3. Call LLM (No Pydantic parsing, directly get content)
+        # No caching here because the conversation context is different each time
+        try:
+            response = self.chat_llm.invoke(messages)
+            return response.content
+        except Exception as e:
+            return f"Error during analysis: {str(e)}"
 
     # --- Execution Logic ---
     def analyze_row(self, headline: str):
