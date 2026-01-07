@@ -61,8 +61,8 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
     } = useChartData(chartParams as any);
 
     // Compute local min/max strings derived from UTC boundaries
-    const utcMin = new Date('2025-07-01T00:00:00Z');
-    const utcMax = new Date('2025-08-01T00:00:00Z');
+    const utcMin = new Date('2025-07-15T00:00:00Z');
+    const utcMax = new Date('2025-11-01T00:00:00Z');
 
     const toLocalInputValue = (d: Date) => {
         const pad = (n: number) => String(n).padStart(2, '0');
@@ -76,9 +76,10 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
 
     // Initialize time inputs to full month range on mount
     useEffect(() => {
-        // Default to full month: 2025-07-01 to 2025-08-01
+        // Default range: 2025-07-15 to 2025-08-15
         setStartInput(toLocalInputValue(utcMin));
-        setEndInput(toLocalInputValue(utcMax));
+        const defaultEnd = new Date('2025-08-15T00:00:00Z');
+        setEndInput(toLocalInputValue(defaultEnd));
     }, []);
 
     // Auto-trigger fetch whenever input values change
@@ -193,7 +194,8 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                     <input
                         type="datetime-local"
                         value={startInput}
-                        max={toLocalInputValue(new Date())}
+                        min={toLocalInputValue(utcMin)}
+                        max={toLocalInputValue(utcMax)}
                         onChange={(e) => setStartInput(e.target.value)}
                         className="px-3 py-2 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 text-sm"
                     />
@@ -206,7 +208,8 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                     <input
                         type="datetime-local"
                         value={endInput}
-                        max={toLocalInputValue(new Date())}
+                        min={toLocalInputValue(utcMin)}
+                        max={toLocalInputValue(utcMax)}
                         onChange={(e) => setEndInput(e.target.value)}
                         className="px-3 py-2 border rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 text-sm"
                     />
