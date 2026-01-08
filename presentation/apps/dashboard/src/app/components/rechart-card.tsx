@@ -46,7 +46,7 @@ function formatTimeLabel(isoString: string, isShortRange: boolean): string {
 
 export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
     // Form state (user-editable). chartParams controls when we actually fetch.
-    const [startInput, setStartInput] = useState<string>('2025-07-01T00:00');
+    const [startInput, setStartInput] = useState<string>('2025-07-17T00:00');
     const [endInput, setEndInput] = useState<string>('2025-08-01T00:00');
     const [cryptoInput, setCryptoInput] = useState<string>('BTC/USD');
 
@@ -61,7 +61,7 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
     } = useChartData(chartParams as any);
 
     // Compute local min/max strings derived from UTC boundaries
-    const utcMin = new Date('2025-07-15T00:00:00Z');
+    const utcMin = new Date('2025-07-17T00:00:00Z');
     const utcMax = new Date('2025-11-01T00:00:00Z');
 
     const toLocalInputValue = (d: Date) => {
@@ -250,6 +250,8 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                                     );
                                 }}
                                 scale="time"
+                                minTickGap={50}
+                                tickCount={15}
                             />
                             <YAxis
                                 domain={['auto', 'auto']}
