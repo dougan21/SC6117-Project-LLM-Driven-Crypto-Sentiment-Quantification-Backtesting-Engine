@@ -43,7 +43,7 @@ export function ChatbotCard() {
                 {messages.length > 0 &&
                     messages.map((m, idx) => (
                         <div
-                            key={idx}
+                            key={`${m.timestamp || ''}-${m.role}-${idx}`}
                             className={`max-w-[80%] p-2 text-sm rounded-lg border
                                 ${
                                     m.role === 'assistant'
