@@ -153,7 +153,10 @@ export function RechartCard({ onCryptoPairChange }: RechartCardProps) {
                     {events && events.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700">
                             {events.map((event: any, idx: number) => (
-                                <div key={idx} className="text-xs">
+                                <div
+                                    key={`${event.timestamp || ''}-${event.action || ''}-${idx}`}
+                                    className="text-xs"
+                                >
                                     <p className="font-semibold text-blue-600 dark:text-blue-400">
                                         {event.action}
                                     </p>

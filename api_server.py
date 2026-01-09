@@ -75,14 +75,17 @@ class AnalysisResponse(BaseModel):
     reason: str
     strategy_used: str
 
+
 class ChatMessage(BaseModel):
-    role: Literal["user", "assistant"] 
+    role: Literal["user", "assistant"]
     content: str
     timestamp: Optional[str] = None
+
 
 class ChatbotRequest(BaseModel):
     message: str
     history: List[ChatMessage] = []
+
 
 class ChatbotResponse(BaseModel):
     message: str
@@ -191,7 +194,7 @@ async def chatbot_endpoint(request: ChatbotRequest):
 
         #  runner analyze for chat history
         ai_reply = runner.analyze_for_chat(
-            user_input=user_message, 
+            user_input=user_message,
             chat_history=langchain_history
         )
 
@@ -262,7 +265,9 @@ async def fetch_news_and_analyze(
     articles = data.get("articles", []) if isinstance(data, dict) else []
     processed_news = []
     for i, art in enumerate(articles[:limit]):
-        uid = art.get("url") or uuid.uuid4().hex
+        # Use URL + index to ensure uniqueness, or generate UUID if no URL
+        url = art.get("url") or ""
+        uid = f"{url}-{i}" if url else uuid.uuid4().hex
         title = art.get("title") or ""
         abstract = art.get("description") or art.get("content") or ""
         pub_time = art.get("publishedAt") or ""
@@ -498,6 +503,41 @@ def chart_data(
         startDateTime = start
     if (not endDateTime) and end:
         endDateTime = end
+
+    # Smart downsampling: if points not specified, calculate reasonable default based on time range
+    if points is None:
+        try:
+            if startDateTime and endDateTime:
+                s_dt = datetime.fromisoformat(
+                    startDateTime.replace("Z", "+00:00"))
+                e_dt = datetime.fromisoformat(
+                    endDateTime.replace("Z", "+00:00"))
+                time_diff = e_dt - s_dt
+                days = time_diff.total_seconds() / 86400
+
+                # Calculate reasonable points based on duration:
+                # - < 1 day: 500 points (every ~3 minutes for 1-day)
+                # - 1-7 days: 1000 points (every ~10 minutes for 1 week)
+                # - 7-30 days: 2000 points (every ~20 minutes for 1 month)
+                # - > 30 days: 3000 points (every ~45 minutes for 3 months)
+                if days < 1:
+                    points = 500
+                elif days < 7:
+                    points = 1000
+                elif days < 30:
+                    points = 2000
+                else:
+                    points = 3000
+                LOG(
+                    f"[Debug] Auto-calculated points={points} for {days:.1f} days of data")
+            else:
+                # Default if no time range specified
+                points = 2000
+                LOG(
+                    f"[Debug] Using default points={points} (no time range specified)")
+        except Exception as e:
+            LOG_ERR(f"[Debug] Failed to calculate smart points: {e}")
+            points = 2000  # fallback default
     source = None
     chosen_parquet = None
     # If client didn't provide a backtest parquet, try to auto-resolve one from results/
